@@ -3,6 +3,7 @@
 > **Status**: `FINALIZED`
 > **Type**: Brownfield — Repair, Migration, Enhancement
 > **Team**: DeepStack | APL Qualifiers 2026
+> **Last Updated**: 2026-05-24 — AI strategy revised to hosted LLM
 
 ---
 
@@ -42,18 +43,22 @@ PlaySphere AI is a premium, hackathon-ready, AI-powered sports infrastructure di
 
 ## Constraints
 
-- **Ollama must run locally** at `http://localhost:11434` — no remote Ollama endpoints
+- **No local Ollama** — must not require `ollama install`, `ollama serve`, or model downloads
+- **Hosted LLM provider** — use cloud inference API (Groq preferred) with OpenAI-compatible `/chat/completions` endpoint
 - **No `@google/generative-ai` SDK** — must be completely removed
+- **Environment-variable driven** — `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL` configure the AI layer
 - **Firebase Firestore** must remain as the database — no migration
 - **Next.js App Router** architecture must be preserved — no pages-dir migration
 - **Neo-brutalist UI** must be preserved — no design-system overhaul
 - **All AI logic must remain server-side** — no client-side model calls
+- **Vercel-compatible** — no local machine dependencies, fully deployable
 
 ---
 
 ## Success Criteria
 
-- [ ] Ollama integration works: AI Concierge and Sports Buddy both respond via `llama3.1:8b` through `/api/ai/concierge` and `/api/ai/buddy`
+- [ ] Hosted LLM works: AI Concierge and Sports Buddy respond via Groq/OpenRouter through `/api/ai/concierge` and `/api/ai/buddy`
+- [ ] No local dependencies: app runs and AI works without any local installation
 - [ ] Chat scroll bug eliminated: only the chat container scrolls, not the page
 - [ ] Auth persistence: users stay logged in after refresh, navigation, and tab reopen
 - [ ] Dashboard bookings: real-time Firestore data loads and displays correctly
@@ -61,3 +66,4 @@ PlaySphere AI is a premium, hackathon-ready, AI-powered sports infrastructure di
 - [ ] Admin routes deleted; AI Venue Discovery insight cards replace them
 - [ ] Zero broken pages, buttons, or dead-end flows in the demo path
 - [ ] `npm run build` passes with zero errors
+- [ ] App is Vercel-deployable without any machine-local configuration

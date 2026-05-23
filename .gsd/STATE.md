@@ -48,12 +48,17 @@
 
 ## Blockers
 
-- **Ollama must be running locally** on port 11434 with `llama3.1:8b` pulled
-- If Ollama is not running, AI features must degrade gracefully (not crash)
+- **Groq API key required** before Phase 1 can execute — free at https://console.groq.com
+- ~~Local Ollama~~ — **NOT required** (strategy changed to hosted Groq API)
 
 ## Environment Variables Needed
 
 ```env
-OLLAMA_BASE_URL=http://localhost:11434
-OLLAMA_MODEL=llama3.1:8b
+# Add to playsphere-ai/.env.local
+LLM_API_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=<GROQ_API_KEY_FROM_USER>
+LLM_MODEL=llama-3.1-8b-instant
+
+# Remove:
+# GEMINI_API_KEY=...
 ```

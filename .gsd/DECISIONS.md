@@ -4,16 +4,28 @@
 
 ---
 
-## ADR-001: Replace Gemini with Ollama
+## ADR-001: Replace Gemini with Groq API (hosted Llama 3.1)
 
-**Date**: 2026-05-23
-**Status**: Accepted
+**Date**: 2026-05-24
+**Status**: Accepted (revised from local Ollama)
 
-**Context**: The Gemini API key was working but the user wants to switch to Ollama for local inference. The Globant Enterprise AI (saia.ai) token was tested extensively — all auth combinations return 401. Ollama is the correct replacement.
+**Context**: The Gemini API key was working but the user wants open-source LLM models. Local Ollama was initially considered but rejected — it requires `ollama install`, `ollama serve`, and downloading ~2GB model weights. This makes the app un-deployable on Vercel and fragile during demo/judging.
 
-**Decision**: Use Ollama local inference at `http://localhost:11434`. Model: `llama3.1:8b` (default), configurable via `OLLAMA_MODEL` env var.
+**Decision**: Use **Groq API** with `llama-3.1-8b-instant` model. Groq offers:
+- Free tier with generous rate limits
+- Ultra-fast inference (< 1s typical latency)
+- OpenAI-compatible `/chat/completions` endpoint
+- Cloud-hosted — zero local setup required
+- Vercel-compatible environment variable configuration
 
-**Consequences**: AI features require Ollama running locally. Graceful degradation must be implemented for when Ollama is not available.
+**Configuration**:
+```env
+LLM_API_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=<user-provided>
+LLM_MODEL=llama-3.1-8b-instant
+```
+
+**Consequences**: Requires a Groq API key (free at console.groq.com). Rate limits apply on free tier but are generous for demo use.
 
 ---
 
