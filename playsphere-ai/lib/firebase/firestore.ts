@@ -134,13 +134,6 @@ export async function getVenueBookings(venueId: string, date: string): Promise<B
 }
 
 export async function checkSlotAvailability(venueId: string, date: string, slot: string): Promise<boolean> {
-  const q = query(
-    collection(db, 'bookings'),
-    where('venueId', '==', venueId),
-    where('date', '==', date),
-    where('slot', '==', slot),
-    where('status', '!=', 'cancelled')
-  );
-  const snap = await getDocs(q);
-  return snap.empty; // true = available
+  const bookings = await getVenueBookings(venueId, date);
+  return !bookings.some(b => b.slot === slot);
 }
