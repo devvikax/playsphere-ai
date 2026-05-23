@@ -1,6 +1,6 @@
 # Phase 3: Dashboard & Booking Repair
 
-> **Status**: ⬜ Not Started
+> **Status**: ✅ Completed
 > **Objective**: Fix the dashboard to show real-time Firestore data. Repair the full booking flow: create → confirm → dashboard → cancel. Remove admin role toggle.
 
 ---

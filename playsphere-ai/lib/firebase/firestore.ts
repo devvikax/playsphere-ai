@@ -14,7 +14,7 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { db } from './config';
-import { Venue, Booking, UserProfile, VenueFilters } from '@/types';
+import { Venue, Booking, UserProfile, VenueFilters, UserRole } from '@/types';
 
 // ── VENUES ──────────────────────────────────────────────────────────────────
 
@@ -119,4 +119,28 @@ export async function toggleSavedVenue(userId: string, venueId: string, isSaved:
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   const snap = await getDoc(doc(db, 'users', uid));
   return snap.exists() ? (snap.data() as UserProfile) : null;
+}
+
+export async function getVenueBookings(venueId: string, date: string): Promise<Booking[]> {
+  const q = query(
+    collection(db, 'bookings'),
+    where('venueId', '==', venueId),
+    where('date', '==', date)
+  );
+  const snap = await getDocs(q);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() } as Booking))
+    .filter((b) => b.status !== 'cancelled');
+}
+
+export async function checkSlotAvailability(venueId: string, date: string, slot: string): Promise<boolean> {
+  const q = query(
+    collection(db, 'bookings'),
+    where('venueId', '==', venueId),
+    where('date', '==', date),
+    where('slot', '==', slot),
+    where('status', '!=', 'cancelled')
+  );
+  const snap = await getDocs(q);
+  return snap.empty; // true = available
 }
