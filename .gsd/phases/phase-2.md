@@ -1,6 +1,6 @@
 # Phase 2: Critical Bug Fixes
 
-> **Status**: ⬜ Not Started
+> **Status**: ✅ Completed
 > **Objective**: Fix the two highest-impact UX bugs — chat scroll hijack and auth session loss on page refresh.
 
 ---

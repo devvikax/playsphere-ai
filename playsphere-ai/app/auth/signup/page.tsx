@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, User, Eye, EyeOff, Zap, ArrowRight, Loader2 } from 'lucide-react';
 import { signUpWithEmail, signInWithGoogle } from '@/lib/firebase/auth';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { useEffect } from 'react';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -15,6 +17,13 @@ export default function SignupPage() {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+  const { user, loading: authLoading } = useAuth();
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.push('/dashboard');
+    }
+  }, [user, authLoading, router]);
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,19 +57,25 @@ export default function SignupPage() {
   return (
     <div className="min-h-screen hero-gradient flex items-center justify-center px-4 pt-16">
       <div className="w-full max-w-md">
+        {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl mb-4">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-400 to-indigo-500 flex items-center justify-center">
-              <Zap className="w-5 h-5 text-white" />
+          <Link href="/" className="inline-flex items-center gap-2 font-display font-bold text-2xl mb-2">
+            <div className="w-10 h-10 rounded-md bg-yellow-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000]">
+              <Zap className="w-5 h-5 text-black fill-black" />
             </div>
-            <span className="gradient-text">PlaySphere AI</span>
+            <span className="gradient-text [text-shadow:1.5px_1.5px_0px_#000]">PlaySphere AI</span>
           </Link>
-          <h1 className="font-display text-2xl font-bold text-white mt-2">Create your account</h1>
-          <p className="text-slate-400 text-sm mt-1">Start discovering sports venues in Lucknow</p>
+          <h1 className="font-display text-2xl font-black text-white mt-2 uppercase tracking-wide">Create your account</h1>
+          <p className="text-slate-400 text-sm mt-1 font-medium">Start discovering sports venues in Lucknow</p>
         </div>
 
-        <div className="glass rounded-2xl p-8 border border-white/8">
-          <button onClick={handleGoogle} disabled={googleLoading} className="w-full btn-secondary justify-center mb-6 py-3">
+        <div className="bg-slate-900 border-3 border-black rounded-lg p-8 shadow-[8px_8px_0px_0px_#000]">
+          {/* Google Sign In */}
+          <button
+            onClick={handleGoogle}
+            disabled={googleLoading}
+            className="w-full flex items-center justify-center gap-3 bg-white text-black font-display font-black border-3 border-black rounded-md py-3 shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[6px_6px_0px_#000] active:translate-x-[2px] active:translate-y-[2px] active:shadow-[2px_2px_0px_#000] transition-all disabled:opacity-50 cursor-pointer"
+          >
             {googleLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (
               <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -72,39 +87,75 @@ export default function SignupPage() {
             Continue with Google
           </button>
 
+          {/* Divider */}
           <div className="flex items-center gap-3 mb-6">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-slate-500 text-xs">or register with email</span>
-            <div className="flex-1 h-px bg-white/10" />
+            <div className="flex-1 h-0.5 bg-black" />
+            <span className="text-slate-400 text-xs font-bold uppercase tracking-wider">or register with email</span>
+            <div className="flex-1 h-0.5 bg-black" />
           </div>
 
-          <form onSubmit={handleSignup} className="space-y-4">
+          {/* Email Form */}
+          <form onSubmit={handleSignup} className="space-y-6">
             <div className="relative">
-              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input id="name" type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" required className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+              <input
+                id="name"
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Full name"
+                required
+                className="w-full pl-11 placeholder-slate-500"
+              />
             </div>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input id="signup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email address" required className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all" />
+              <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+              <input
+                id="signup-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Email address"
+                required
+                className="w-full pl-11 placeholder-slate-500"
+              />
             </div>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input id="signup-password" type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password (min 6 chars)" required className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all" />
-              <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors">
+              <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 z-10" />
+              <input
+                id="signup-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Password (min 6 chars)"
+                required
+                className="w-full pl-11 pr-11 placeholder-slate-500"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors z-10"
+              >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
 
-            {error && <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3 text-red-400 text-sm">{error}</div>}
+            {error && (
+              <div className="bg-red-500/10 border-2 border-black rounded-md px-4 py-3 text-red-400 text-sm font-bold shadow-[2px_2px_0px_#000]">
+                {error}
+              </div>
+            )}
 
             <button type="submit" disabled={loading} className="w-full btn-primary justify-center py-3">
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <>Create Account <ArrowRight className="w-4 h-4" /></>}
             </button>
           </form>
 
-          <p className="text-center text-slate-400 text-sm mt-6">
+          <p className="text-center text-slate-400 text-sm mt-6 font-medium">
             Already have an account?{' '}
-            <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-medium transition-colors">Sign in</Link>
+            <Link href="/auth/login" className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors underline decoration-black underline-offset-4">
+              Sign in
+            </Link>
           </p>
         </div>
       </div>
