@@ -1,61 +1,63 @@
-# SPEC.md — PlaySphere AI Project Specification
+# SPEC.md — PlaySphere AI
 
 > **Status**: `FINALIZED`
-> **Team**: DeepStack | **Hackathon**: APL Qualifiers 2026
+> **Type**: Brownfield — Repair, Migration, Enhancement
+> **Team**: DeepStack | APL Qualifiers 2026
 
 ---
 
 ## Vision
 
-PlaySphere AI is an agentic sports infrastructure discovery and booking platform for Lucknow. It solves the fragmentation in sports facility discovery by combining AI-powered recommendations (via Gemini), real-time maps (Google Maps), and smart booking — all in a polished, startup-quality interface that feels intelligent and conversational.
+PlaySphere AI is a premium, hackathon-ready, AI-powered sports infrastructure discovery and booking platform for Lucknow. It combines real-time venue discovery, natural language AI assistance via Ollama, interactive maps, smart booking, and an intelligent AI sports concierge — all in a polished Neo-brutalist sports-tech UI. The platform must be stable, demo-ready, and startup-quality by the end of this engagement.
+
+---
 
 ## Goals
 
-1. **AI Concierge** — Users describe what they want in natural language; Gemini understands intent, filters Firestore data, and recommends the best venues with reasoning.
-2. **Smart Discovery** — Filter venues by sport, area, budget, skill level, amenities, and time slot with map and card hybrid UI.
-3. **Booking System** — Simulated slot booking with Firebase Firestore, dashboard, and booking history.
-4. **Agentic Behavior** — AI suggests alternatives when venues are unavailable, gives beginner tips via AI Sports Buddy, and factors peak pricing logic.
-5. **Admin Panel** — Secure `/admin` route to manage venue listings.
+1. **Migrate AI from Gemini to Ollama** — Complete removal of `@google/generative-ai`, replace with modular Ollama integration using server-side API routes and environment-variable configuration.
+2. **Fix all critical UX bugs** — Resolve chat scroll hijacking, auth session loss on refresh, broken dashboard bookings, and broken booking flows.
+3. **Remove admin system, add AI Venue Discovery** — Replace manual `/admin` management with an AI-powered insight layer showing venue gaps, underrepresented areas, and discovery cards.
+4. **Full-stack QA pass** — Repair every broken button, dead link, placeholder, and unstable workflow across the entire application.
+5. **Demo-ready polish** — Ensure the app feels startup-quality: smooth animations, loading states, error handling, real-time data, and mobile responsiveness.
+
+---
 
 ## Non-Goals (Out of Scope)
 
-- Real payment gateway integration (Razorpay/Stripe etc.)
-- Real-time slot availability API from actual venues
-- Native mobile app (web-only MVP)
-- Multi-city support beyond Lucknow (v1)
+- Payment gateway integration (booking is simulated)
+- Real venue owner portal
+- Real-time multi-user slot conflict resolution
+- iOS / Android native apps
+- Deployment to Vercel (out of scope unless bonus time)
+
+---
 
 ## Users
 
-- **Sports enthusiasts in Lucknow** — casual players looking to book courts/turfs/pools
-- **Beginners** — first-time players needing guidance on venues and timing
-- **Group bookers** — people organizing sports sessions for friends/teams
-- **Admin** — venue managers or hackathon team maintaining listings
+- **Sports players in Lucknow** browsing, filtering, and booking sports venues
+- **Beginners** seeking guided AI recommendations (Sports Buddy)
+- **Hackathon judges** evaluating demo flow, AI integration, technical completeness, and presentation quality
+
+---
 
 ## Constraints
 
-- **Timeline**: Hackathon MVP — must be demo-ready
-- **Tech**: Next.js + Tailwind CSS + Firebase + Gemini API + Google Maps API
-- **Deployment**: Vercel-compatible
-- **AI Model**: Gemini 2.5 Flash (already have API key)
-- **Database**: Firebase Firestore (no SQL)
-- **Auth**: Firebase Authentication (Google + Email/Password)
+- **Ollama must run locally** at `http://localhost:11434` — no remote Ollama endpoints
+- **No `@google/generative-ai` SDK** — must be completely removed
+- **Firebase Firestore** must remain as the database — no migration
+- **Next.js App Router** architecture must be preserved — no pages-dir migration
+- **Neo-brutalist UI** must be preserved — no design-system overhaul
+- **All AI logic must remain server-side** — no client-side model calls
+
+---
 
 ## Success Criteria
 
-- [ ] Landing page impresses hackathon judges within 5 seconds
-- [ ] AI Concierge successfully interprets natural language queries and returns relevant venues
-- [ ] Google Maps shows all venues as pins with click-to-view
-- [ ] User can complete a booking flow: Search → Select → Book → Dashboard
-- [ ] Admin can add/edit venues via secure `/admin` route
-- [ ] App is deployed on Vercel and accessible via public URL
-- [ ] GitHub repo is public with clean commit history
-
-## Hackathon Scoring Alignment
-
-| Criterion | Weight | Our Approach |
-|-----------|--------|-------------|
-| Innovation & Creativity | 25% | Gemini AI Concierge + AI Sports Buddy + agentic alternatives |
-| Technical Implementation | 25% | Full-stack Next.js, Firebase, Maps, AI integration |
-| Theme Relevance | 20% | Direct APL sports infra discovery use case |
-| Completeness | 20% | All core flows working end-to-end |
-| Documentation & Presentation | 10% | Clean README, architecture docs, demo flow |
+- [ ] Ollama integration works: AI Concierge and Sports Buddy both respond via `llama3.1:8b` through `/api/ai/concierge` and `/api/ai/buddy`
+- [ ] Chat scroll bug eliminated: only the chat container scrolls, not the page
+- [ ] Auth persistence: users stay logged in after refresh, navigation, and tab reopen
+- [ ] Dashboard bookings: real-time Firestore data loads and displays correctly
+- [ ] Booking flow: create → confirm → appear in dashboard → cancel → update in real time
+- [ ] Admin routes deleted; AI Venue Discovery insight cards replace them
+- [ ] Zero broken pages, buttons, or dead-end flows in the demo path
+- [ ] `npm run build` passes with zero errors

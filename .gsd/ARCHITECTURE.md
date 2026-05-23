@@ -1,201 +1,173 @@
-# ARCHITECTURE.md — PlaySphere AI System Design
+# ARCHITECTURE.md — PlaySphere AI
 
-> **Version**: 1.0 | **Status**: Draft
+> **Type**: Brownfield Next.js App Router Application
+> **Status**: Mapped 2026-05-23
 
 ---
 
 ## System Overview
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                   PlaySphere AI                      │
-│           AI-Powered Sports Discovery               │
-└─────────────────────────────────────────────────────┘
-                          │
-         ┌────────────────┼────────────────┐
-         │                │                │
-    ┌────▼────┐     ┌─────▼────┐    ┌─────▼─────┐
-    │ Next.js │     │ Firebase │    │  External  │
-    │Frontend │     │  Backend │    │   APIs     │
-    └────┬────┘     └─────┬────┘    └─────┬─────┘
-         │                │                │
-    ┌────▼────┐     ┌─────▼────┐    ┌─────▼─────┐
-    │  Pages  │     │Firestore │    │  Gemini   │
-    │  /app   │     │  +Auth   │    │  + Maps   │
-    └─────────┘     └──────────┘    └───────────┘
+Browser (React Client)
+    │
+    ├── /               Landing page with AI preview, sports categories, map teaser
+    ├── /venues          Venue discovery: grid, map, AI filter views
+    ├── /venues/[id]     Venue detail + booking slot selector
+    ├── /dashboard       User bookings, saved venues, AI concierge, profile
+    ├── /auth/login      Email + Google sign-in
+    ├── /auth/signup     Email + Google registration
+    └── [DELETED] /admin  Manual venue management (being removed)
+    
+    ↕ API Routes (server-side only)
+    ├── /api/ai/concierge   AI venue recommendations (Ollama)
+    ├── /api/ai/buddy       Sports Buddy guidance (Ollama)
+    ├── /api/ai/discover    [NEW] AI venue discovery insights (Ollama)
+    └── /api/seed           Firebase seed endpoint
+    
+    ↕ External Services
+    ├── Firebase Auth       Google + Email/Password sign-in
+    ├── Firebase Firestore  venues, bookings, users collections
+    ├── Google Maps API     Interactive map with venue pins
+    └── Ollama (local)      LLM inference at http://localhost:11434
 ```
 
 ---
 
-## Folder Structure
+## File Structure
 
 ```
 playsphere-ai/
-├── app/                          # Next.js App Router
-│   ├── layout.tsx                # Root layout (fonts, providers)
-│   ├── page.tsx                  # Landing page
-│   ├── venues/
-│   │   ├── page.tsx              # Venue discovery / search
-│   │   └── [id]/page.tsx         # Individual venue detail
-│   ├── booking/
-│   │   └── [venueId]/page.tsx    # Booking flow
-│   ├── dashboard/
-│   │   └── page.tsx              # User dashboard
-│   ├── admin/
-│   │   └── page.tsx              # Admin dashboard
+├── app/
+│   ├── globals.css          Neo-brutalist design tokens + CSS variables
+│   ├── layout.tsx           Root layout with AuthProvider, Navbar, Footer
+│   ├── page.tsx             Landing page (hero, sports categories, AI preview)
+│   ├── api/
+│   │   ├── ai/
+│   │   │   ├── concierge/route.ts   Ollama-powered venue AI
+│   │   │   ├── buddy/route.ts       Ollama-powered sports mentor
+│   │   │   └── discover/route.ts    [NEW] AI venue discovery insights
+│   │   └── seed/route.ts
 │   ├── auth/
 │   │   ├── login/page.tsx
 │   │   └── signup/page.tsx
-│   └── api/
-│       ├── ai/concierge/route.ts  # Gemini AI Concierge endpoint
-│       ├── ai/buddy/route.ts      # AI Sports Buddy endpoint
-│       └── venues/route.ts        # Venues CRUD
-│
-├── components/                   # Reusable UI components
-│   ├── ui/                       # Base components (Button, Card, Input...)
-│   ├── layout/                   # Header, Footer, Nav
-│   ├── venue/                    # VenueCard, VenueGrid, VenueFilter
-│   ├── map/                      # MapView, VenuePin
-│   ├── ai/                       # AIConcierge, SportsBuddy panels
-│   ├── booking/                  # BookingForm, SlotPicker, BookingCard
-│   └── auth/                     # AuthForm, GoogleSignIn
-│
-├── lib/                          # Utility functions
+│   ├── dashboard/page.tsx
+│   └── venues/
+│       ├── page.tsx
+│       └── [id]/page.tsx
+├── components/
+│   ├── ai/
+│   │   ├── AIConciergePreview.tsx
+│   │   └── VenueDiscoveryInsights.tsx  [NEW]
+│   ├── auth/
+│   │   └── AuthProvider.tsx
+│   ├── layout/
+│   │   ├── Navbar.tsx
+│   │   └── Footer.tsx
+│   └── venue/
+│       ├── VenueCard.tsx
+│       └── VenueMap.tsx
+├── lib/
+│   ├── ai/
+│   │   └── ollama.ts        [NEW] Core Ollama API wrapper
 │   ├── firebase/
-│   │   ├── config.ts             # Firebase initialization
-│   │   ├── auth.ts               # Auth helpers
-│   │   ├── firestore.ts          # Firestore helpers
-│   │   └── seed.ts               # Seed data script
-│   ├── gemini.ts                 # Gemini API client
-│   ├── maps.ts                   # Maps utilities
-│   ├── pricing.ts                # Peak pricing logic
-│   └── utils.ts                  # General utilities
-│
+│   │   ├── auth.ts
+│   │   ├── config.ts
+│   │   ├── firestore.ts
+│   │   └── seed.ts
+│   ├── pricing.ts
+│   └── utils.ts
 ├── data/
-│   └── venues.ts                 # Static venue seed data
-│
+│   └── venues.ts            Static venue seed data (20+ Lucknow venues)
 ├── types/
-│   └── index.ts                  # TypeScript interfaces
-│
-├── middleware.ts                 # Route protection
-├── .env.local                    # Environment variables
-├── .env.example                  # Template
-├── tailwind.config.ts
-├── next.config.ts
-└── README.md
+│   └── index.ts
+└── middleware.ts             Route protection
 ```
 
 ---
 
 ## Data Models
 
-### Venue (Firestore: `venues`)
-
+### Venue (Firestore: `venues` collection)
 ```typescript
-interface Venue {
-  id: string;
-  name: string;
-  sport: 'badminton' | 'football' | 'swimming' | 'kabaddi';
-  area: string;                   // e.g. "Gomti Nagar"
-  address: string;
-  coordinates: { lat: number; lng: number };
-  price: number;                  // base price per hour in INR
-  rating: number;                 // 1–5
-  amenities: string[];            // ["AC", "Parking", "Changing Room"]
-  skillLevel: 'beginner' | 'intermediate' | 'advanced' | 'all';
-  timings: { open: string; close: string };
-  description: string;
-  imageUrl: string;
-  category: string;
-  peakPricing: { morning: number; afternoon: number; evening: number };
-  available: boolean;
-  createdAt: Timestamp;
+{
+  id: string
+  name: string
+  sport: Sport
+  area: string
+  address: string
+  price: number          // per hour in INR
+  rating: number         // 1-5
+  skillLevel: SkillLevel // beginner | intermediate | advanced | all
+  amenities: string[]
+  available: boolean
+  description: string
+  timings: string
+  imageUrl: string
+  coordinates: { lat: number; lng: number }
 }
 ```
 
-### Booking (Firestore: `bookings`)
-
+### Booking (Firestore: `bookings` collection)
 ```typescript
-interface Booking {
-  id: string;
-  userId: string;
-  venueId: string;
-  venueName: string;
-  sport: string;
-  date: string;
-  slot: string;                   // e.g. "06:00–07:00"
-  price: number;
-  status: 'upcoming' | 'completed' | 'cancelled';
-  createdAt: Timestamp;
+{
+  id: string
+  userId: string
+  venueId: string
+  venueName: string
+  venueArea: string
+  sport: Sport
+  date: string           // YYYY-MM-DD
+  slot: string           // e.g. "07:00 AM"
+  price: number
+  status: 'upcoming' | 'completed' | 'cancelled'
+  createdAt: Timestamp
 }
 ```
 
-### User Profile (Firestore: `users`)
-
+### UserProfile (Firestore: `users` collection)
 ```typescript
-interface UserProfile {
-  uid: string;
-  displayName: string;
-  email: string;
-  photoURL?: string;
-  savedVenues: string[];
-  role: 'user' | 'admin';
-  createdAt: Timestamp;
+{
+  uid: string
+  displayName: string
+  email: string
+  photoURL: string
+  role: 'user' | 'admin'  // admin role being removed
+  savedVenues: string[]
+  createdAt: Timestamp
 }
 ```
 
 ---
 
-## AI Architecture
-
-### Gemini Concierge Flow
+## AI Architecture (Post-Migration)
 
 ```
-User Input (natural language)
-        │
-        ▼
-  /api/ai/concierge
-        │
-        ▼
-  Parse intent with Gemini (sport, area, budget, skill)
-        │
-        ▼
-  Fetch matching venues from Firestore
-        │
-        ▼
-  Send venues + user query to Gemini
-        │
-        ▼
-  Gemini returns: top recommendation + reasoning
-        │
-        ▼
-  Display to user with venue card + explanation
+User Input (Frontend)
+    │
+    ▼
+API Route (Server-side)         ← No AI logic on client
+    │
+    ├── 1. Query Firestore for venue context (RAG-style)
+    ├── 2. Build system prompt with venue data
+    ├── 3. Call Ollama HTTP API at OLLAMA_BASE_URL
+    │         POST /api/chat
+    │         { model: OLLAMA_MODEL, messages: [...] }
+    ├── 4. Parse and validate response
+    └── 5. Return JSON { response: string } to frontend
+
+lib/ai/ollama.ts (Core Wrapper)
+    ├── callOllama(messages, options)
+    ├── Handles timeout (30s default)
+    ├── Handles connection refused (Ollama not running)
+    └── Returns typed response or throws OllamaError
 ```
 
 ---
 
-## Authentication Flow
+## Key Design Decisions
 
-- Firebase Auth with Google Provider + Email/Password
-- `middleware.ts` protects `/dashboard`, `/booking/*`, `/admin`
-- Admin check via Firestore `users/{uid}.role === 'admin'`
-
----
-
-## Peak Pricing Logic
-
-| Time Slot | Label | Multiplier |
-|-----------|-------|------------|
-| 05:00–08:00 | Morning | 1.0x |
-| 11:00–16:00 | Afternoon | 0.85x (discount) |
-| 17:00–22:00 | Evening (Peak) | 1.3x |
-| Weekend | Any | +₹100–300 |
-
----
-
-## Deployment
-
-- **Platform**: Vercel
-- **Environment Variables**: Set in Vercel dashboard
-- **Firebase Rules**: Configured for authenticated access
-- **Domain**: `playsphere-ai.vercel.app` (or custom)
+1. **Ollama over Gemini**: Local inference, no API key required, works offline
+2. **RAG-style prompting**: Always inject Firestore venue data into Ollama context — never hallucinate
+3. **Cookie auth**: Firebase ID token stored as cookie for SSR middleware auth checks
+4. **Static + dynamic fallback**: Venues page shows local `LUCKNOW_VENUES` if Firestore fetch fails
+5. **Neo-brutalism**: Stark borders, flat shadows, boxy elements — preserved unchanged

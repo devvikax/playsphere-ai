@@ -1,17 +1,15 @@
-# JOURNAL.md — Development Log
+# JOURNAL.md — PlaySphere AI
 
-> Chronological record of development progress
+> Session log
 
 ---
 
-## 2026-05-22
+## 2026-05-23
 
-**Session 1 — Project Initialization**
-
-- `/new-project` workflow executed
-- Comprehensive spec gathered from user requirements
-- SPEC.md, ROADMAP.md, DECISIONS.md, ARCHITECTURE.md, STATE.md created
-- 6-phase roadmap defined covering: Foundation → Landing → Discovery → AI → Booking → Polish
-- Tech stack confirmed: Next.js + Tailwind + Firebase + Gemini + Google Maps
-- Project directory: `playsphere-ai/` subdirectory
-- Ready to begin Phase 1 execution
+- GSD framework initialized from template
+- Full codebase audit completed — 5 phases identified
+- Root causes identified for all 3 critical bugs (auth, scroll, bookings)
+- ADRs written for Ollama migration, RAG prompting, admin removal, cookie fix
+- Saia.ai API tested exhaustively — all 18 combinations return 401/404 — confirmed token invalid for this env
+- SPEC, ROADMAP, ARCHITECTURE, STATE, DECISIONS all initialized
+- Ready for Phase 1 execution: `/plan 1`

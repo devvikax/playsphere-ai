@@ -1,73 +1,55 @@
-# DECISIONS.md — Architecture Decision Records
+# DECISIONS.md — PlaySphere AI
 
-> ADR log for PlaySphere AI
-
----
-
-## ADR-001: Frontend Framework — Next.js with App Router
-
-**Date**: 2026-05-22
-**Status**: Accepted
-
-**Decision**: Use Next.js 14+ with App Router (not Pages Router).
-
-**Reasoning**:
-- Server components for SEO-critical landing page
-- API routes for Gemini proxy (keeps API key server-side)
-- Vercel-native deployment
-- Built-in middleware for route protection
+> Architecture Decision Records (ADRs)
 
 ---
 
-## ADR-002: Styling — Tailwind CSS
+## ADR-001: Replace Gemini with Ollama
 
-**Date**: 2026-05-22
+**Date**: 2026-05-23
 **Status**: Accepted
 
-**Decision**: Tailwind CSS for all styling.
+**Context**: The Gemini API key was working but the user wants to switch to Ollama for local inference. The Globant Enterprise AI (saia.ai) token was tested extensively — all auth combinations return 401. Ollama is the correct replacement.
 
-**Reasoning**: Hackathon speed + design system consistency. No custom CSS overhead.
+**Decision**: Use Ollama local inference at `http://localhost:11434`. Model: `llama3.1:8b` (default), configurable via `OLLAMA_MODEL` env var.
+
+**Consequences**: AI features require Ollama running locally. Graceful degradation must be implemented for when Ollama is not available.
 
 ---
 
-## ADR-003: Database — Firebase Firestore
+## ADR-002: RAG-style venue prompting
 
-**Date**: 2026-05-22
+**Date**: 2026-05-23
 **Status**: Accepted
 
-**Decision**: Firebase Firestore (NoSQL) for venues, bookings, users.
+**Context**: The AI Concierge must recommend real venues from the database, never hallucinate.
 
-**Reasoning**: Real-time, serverless, no infrastructure management. Firebase Auth pairs naturally.
+**Decision**: Always query Firestore first, build venue context JSON, inject into system prompt before sending to Ollama. This is a retrieval-augmented generation pattern without a vector database.
+
+**Consequences**: Slightly higher latency (Firestore query + Ollama call), but responses are always grounded in real data.
 
 ---
 
-## ADR-004: AI — Gemini 2.5 Flash
+## ADR-003: Remove admin system
 
-**Date**: 2026-05-22
+**Date**: 2026-05-23
 **Status**: Accepted
 
-**Decision**: Google Gemini 2.5 Flash via REST API through Next.js API routes.
+**Context**: The admin system (`/admin` route, venue CRUD) is not core to the platform's value proposition and adds complexity.
 
-**Reasoning**: Team already has API key. Best model for structured function-calling with venue data.
+**Decision**: Delete the admin system entirely. Replace with AI Venue Discovery insight cards that show analytically interesting patterns (underserved areas, venue gaps).
+
+**Consequences**: Venues must be managed via Firestore console directly or the seed endpoint.
 
 ---
 
-## ADR-005: Maps — Google Maps JavaScript API
+## ADR-004: Firebase cookie auth fix
 
-**Date**: 2026-05-22
+**Date**: 2026-05-23
 **Status**: Accepted
 
-**Decision**: Google Maps JS API with `@googlemaps/react-wrapper` or `@react-google-maps/api`.
+**Context**: The `Secure` cookie flag causes the auth token cookie to be silently rejected on `http://localhost`, causing logout on every refresh.
 
-**Reasoning**: Required by spec. Best integration with Lucknow location data.
+**Decision**: Conditionally set `Secure` only when `window.location.protocol === 'https:'`. Use `SameSite=Lax` always.
 
----
-
-## ADR-006: Project Directory
-
-**Date**: 2026-05-22
-**Status**: Accepted
-
-**Decision**: Create PlaySphere AI as `/playsphere-ai` subdirectory within the existing workspace.
-
-**Reasoning**: Existing `.py` files in root are from a previous experiment and should not be mixed with the Next.js project.
+**Consequences**: Auth works on localhost during development. Production deployment on HTTPS gets the Secure flag automatically.

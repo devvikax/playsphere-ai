@@ -1,39 +1,59 @@
-# STATE.md — Project Memory
+# STATE.md — PlaySphere AI
 
-> **Last Updated**: 2026-05-22
-> **Current Phase**: Phase 1 — Foundation & Initial Commit
-> **Status**: 🟡 In Progress
+> **Last Updated**: 2026-05-23
+> **Current Phase**: 1
+> **Overall Status**: 🔴 In Progress
 
 ---
 
 ## Active Context
 
-- Project initialized via `/new-project` workflow
-- Team: DeepStack (Suryansh Singh, Shivam Jaiswal, Suyash Verma, Vikas Patel)
-- Hackathon: APL Qualifiers 2026
-- Gemini API Key: configured in `.env`
-- Llama Cloud Key: configured in `.env` (for document parsing, may be used later)
+- Working in: `c:/Users/vikas/OneDrive/Desktop/Project_05_APL/playsphere-ai/`
+- Dev server: Running on `http://localhost:3000`
+- Stack: Next.js 16.2.6, React 19, Tailwind CSS v4, Firebase v12, Lucide-React
 
-## Completed Milestones
+## Completed
 
-- [x] GSD project initialized
-- [x] SPEC.md written
-- [x] ROADMAP.md with 6 phases written
+- ✅ GSD framework installed
+- ✅ `.gsd/` initialized with SPEC, ROADMAP, STATE, DECISIONS, JOURNAL
+- ✅ Codebase fully audited — architecture mapped
 
-## Decisions Made
+## Key Findings from Audit
 
-- Next.js (App Router) + Tailwind CSS for frontend
-- Firebase Firestore + Firebase Auth for backend
-- Gemini 2.5 Flash for AI features
-- Google Maps JavaScript API for maps
-- Vercel for deployment
-- Project root: `c:\Users\vikas\OneDrive\Desktop\Project_05_APL\playsphere-ai\`
+### Auth Bug (Root Cause)
+- `AuthProvider.tsx` line 42 sets cookie with `; Secure` flag
+- On `http://localhost` (HTTP), browsers reject Secure cookies → cookie is never set
+- Middleware checks for `auth-token` cookie → missing → always redirects to login
+- Fix: Conditionally set Secure only when `window.location.protocol === 'https:'`
+
+### Chat Scroll Bug (Root Cause)
+- `AIConciergePreview.tsx` line 22: `messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })`
+- `scrollIntoView()` scrolls the **entire page** to bring the div into view
+- Fix: Get ref to the messages container div, use `container.scrollTop = container.scrollHeight`
+
+### Dashboard Bookings Bug (Root Cause)
+- Dashboard uses a one-shot `getUserBookings().then()` fetch (not a real-time listener)
+- If Firestore index is missing for `userId + orderBy(createdAt)`, the query silently fails
+- Fix: Replace with `onSnapshot` listener + add Firestore composite index
+
+### Admin System
+- `app/admin/page.tsx` exists — must be deleted
+- Admin links in Navbar must be removed
+- `updateUserRole` in firestore.ts must be removed
+
+### Gemini Removal Required
+- `@google/generative-ai` in `package.json` 
+- Used in: `app/api/ai/concierge/route.ts`, `app/api/ai/buddy/route.ts`
+- References in: `AIConciergePreview.tsx` (text), `Footer.tsx`, `page.tsx` (landing)
 
 ## Blockers
 
-- None currently
+- **Ollama must be running locally** on port 11434 with `llama3.1:8b` pulled
+- If Ollama is not running, AI features must degrade gracefully (not crash)
 
-## Notes
+## Environment Variables Needed
 
-- The existing `.py` files (chat_with_pdf.py, gemini_chatbot.py, llama_parser.py) are from a previous experiment and are NOT part of PlaySphere AI.
-- PlaySphere AI is a new Next.js project inside a `/playsphere-ai` subdirectory.
+```env
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=llama3.1:8b
+```
