@@ -52,7 +52,10 @@ Each insight must follow this interface:
 Ensure variety in the insight types (e.g., one gap, one value, one trend).`;
 
     // 4. Call LLM
-    const response = await callLLM(systemPrompt, 'Generate the JSON insights based on the data provided.', {
+    const response = await callLLM([
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: 'Generate the JSON insights based on the data provided.' }
+    ], {
       temperature: 0.4,
     });
 
