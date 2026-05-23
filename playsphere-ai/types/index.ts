@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export type Sport = 'badminton' | 'football' | 'swimming' | 'kabaddi';
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'all';
 export type BookingStatus = 'upcoming' | 'completed' | 'cancelled';
-export type UserRole = 'user' | 'admin';
+export type UserRole = 'user';
 export type PriceSlot = 'morning' | 'afternoon' | 'evening';
 
 export interface Coordinates {

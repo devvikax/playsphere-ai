@@ -3,6 +3,7 @@ import { ArrowRight, Bot, MapPin, Star, Zap, ChevronRight, Shield, Clock, Trendi
 import { LUCKNOW_VENUES, SPORTS_LIST } from '@/data/venues';
 import { VenueCard } from '@/components/venue/VenueCard';
 import { AIConciergePreview } from '@/components/ai/AIConciergePreview';
+import { VenueDiscoveryInsights } from '@/components/ai/VenueDiscoveryInsights';
 
 export default function HomePage() {
   const featuredVenues = LUCKNOW_VENUES.filter((v) => v.rating >= 4.7).slice(0, 3);
@@ -62,6 +63,13 @@ export default function HomePage() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── AI VENUE DISCOVERY ───────────────────────────────── */}
+      <section className="py-12 px-4 border-b-3 border-black bg-slate-900/40">
+        <div className="max-w-6xl mx-auto">
+          <VenueDiscoveryInsights />
         </div>
       </section>
 

@@ -5,11 +5,14 @@ import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, Map, LayoutGrid, Loader2, Bot } from 'lucide-react';
 import { LUCKNOW_VENUES, SPORTS_LIST, SPORTS_AREAS } from '@/data/venues';
 import { VenueCard } from '@/components/venue/VenueCard';
+import { VenueMap } from '@/components/venue/VenueMap';
 import { AIConciergePreview } from '@/components/ai/AIConciergePreview';
+import { VenueDiscoveryInsights } from '@/components/ai/VenueDiscoveryInsights';
 import { Venue, VenueFilters, Sport, SkillLevel } from '@/types';
 
 function VenuesContent() {
   const searchParams = useSearchParams();
+  const [allVenues, setAllVenues] = useState<Venue[]>(LUCKNOW_VENUES);
   const [venues, setVenues] = useState<Venue[]>(LUCKNOW_VENUES);
   const [filters, setFilters] = useState<VenueFilters>({
     sport: (searchParams.get('sport') as Sport) || '',
@@ -18,11 +21,26 @@ function VenuesContent() {
     skillLevel: '',
     searchQuery: '',
   });
-  const [view, setView] = useState<'grid' | 'ai'>('grid');
+  const [view, setView] = useState<'grid' | 'ai' | 'map'>(
+    searchParams.get('tab') === 'map' ? 'map' : 'grid'
+  );
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    let filtered = [...LUCKNOW_VENUES];
+    import('@/lib/firebase/firestore').then(({ getAllVenues }) => {
+      getAllVenues().then((data) => {
+        if (data && data.length > 0) {
+          setAllVenues(data);
+          setVenues(data);
+        }
+      }).catch((err) => {
+        console.error('Error fetching venues from Firestore, falling back to local data:', err);
+      });
+    });
+  }, []);
+
+  useEffect(() => {
+    let filtered = [...allVenues];
 
     if (filters.sport) filtered = filtered.filter((v) => v.sport === filters.sport);
     if (filters.area) filtered = filtered.filter((v) => v.area === filters.area);
@@ -36,7 +54,7 @@ function VenuesContent() {
     }
 
     setVenues(filtered);
-  }, [filters]);
+  }, [filters, allVenues]);
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
@@ -51,8 +69,12 @@ function VenuesContent() {
           </p>
         </div>
 
+        <div className="mb-10">
+          <VenueDiscoveryInsights />
+        </div>
+
         {/* Search Bar */}
-        <div className="flex gap-3 mb-6">
+        <div className="flex flex-col sm:flex-row gap-3 mb-6">
           <div className="relative flex-1">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
             <input
@@ -60,26 +82,32 @@ function VenuesContent() {
               placeholder="Search venues, areas, or sports..."
               value={filters.searchQuery || ''}
               onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
-              className="w-full bg-white/5 border border-white/10 rounded-xl pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+              className="w-full bg-[#0d111d] border-2 border-black rounded-md pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-0 shadow-[2px_2px_0px_#000] transition-all"
             />
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`btn-secondary px-4 py-3 ${showFilters ? 'border-cyan-500/50 text-cyan-400' : ''}`}
+            className={`btn-secondary px-4 py-3 shadow-[2px_2px_0px_#000] ${showFilters ? 'bg-cyan-400 text-black' : ''}`}
           >
             <SlidersHorizontal className="w-4 h-4" />
             <span className="hidden sm:inline">Filters</span>
           </button>
-          <div className="flex glass rounded-xl border border-white/10 overflow-hidden">
+          <div className="flex bg-[#0d111d] rounded-md border-2 border-black overflow-hidden shadow-[2px_2px_0px_#000]">
             <button
               onClick={() => setView('grid')}
-              className={`px-3 py-3 transition-colors ${view === 'grid' ? 'bg-cyan-500/20 text-cyan-400' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-3 transition-colors ${view === 'grid' ? 'bg-cyan-400 text-black font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
             <button
+              onClick={() => setView('map')}
+              className={`px-4 py-3 border-l-2 border-r-2 border-black transition-colors ${view === 'map' ? 'bg-emerald-400 text-black font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+            >
+              <Map className="w-4 h-4" />
+            </button>
+            <button
               onClick={() => setView('ai')}
-              className={`px-3 py-3 transition-colors ${view === 'ai' ? 'bg-indigo-500/20 text-indigo-400' : 'text-slate-400 hover:text-white'}`}
+              className={`px-4 py-3 transition-colors ${view === 'ai' ? 'bg-purple-600 text-white font-bold' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
             >
               <Bot className="w-4 h-4" />
             </button>
@@ -88,56 +116,56 @@ function VenuesContent() {
 
         {/* Filter Panel */}
         {showFilters && (
-          <div className="glass rounded-2xl p-6 mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-slate-900 border-3 border-black rounded-lg p-6 mb-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 shadow-[4px_4px_0px_#000]">
             {/* Sport Filter */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Sport</label>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block">Sport</label>
               <select
                 value={filters.sport || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, sport: e.target.value as Sport | '' }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="">All Sports</option>
+                <option value="" className="bg-[#0d111d]">All Sports</option>
                 {SPORTS_LIST.map((s) => (
-                  <option key={s.value} value={s.value}>{s.emoji} {s.label}</option>
+                  <option key={s.value} value={s.value} className="bg-[#0d111d]">{s.emoji} {s.label}</option>
                 ))}
               </select>
             </div>
 
             {/* Area Filter */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Area</label>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block">Area</label>
               <select
                 value={filters.area || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, area: e.target.value }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="">All Areas</option>
+                <option value="" className="bg-[#0d111d]">All Areas</option>
                 {SPORTS_AREAS.map((a) => (
-                  <option key={a} value={a}>{a}</option>
+                  <option key={a} value={a} className="bg-[#0d111d]">{a}</option>
                 ))}
               </select>
             </div>
 
             {/* Skill Level Filter */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Skill Level</label>
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block">Skill Level</label>
               <select
                 value={filters.skillLevel || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, skillLevel: e.target.value as SkillLevel | '' }))}
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-500/50"
+                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="">All Levels</option>
-                <option value="beginner">Beginner</option>
-                <option value="intermediate">Intermediate</option>
-                <option value="advanced">Advanced</option>
+                <option value="" className="bg-[#0d111d]">All Levels</option>
+                <option value="beginner" className="bg-[#0d111d]">Beginner</option>
+                <option value="intermediate" className="bg-[#0d111d]">Intermediate</option>
+                <option value="advanced" className="bg-[#0d111d]">Advanced</option>
               </select>
             </div>
 
             {/* Max Price Filter */}
             <div>
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">
-                Max Price: ₹{filters.maxPrice}
+              <label className="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 block">
+                Max Price: <span className="text-cyan-400 font-extrabold">₹{filters.maxPrice}</span>
               </label>
               <input
                 type="range"
@@ -146,15 +174,15 @@ function VenuesContent() {
                 step={50}
                 value={filters.maxPrice}
                 onChange={(e) => setFilters((f) => ({ ...f, maxPrice: Number(e.target.value) }))}
-                className="w-full accent-cyan-400"
+                className="w-full accent-cyan-400 h-2 bg-[#0d111d] border-2 border-black rounded-md appearance-none cursor-pointer"
               />
             </div>
 
             {/* Reset */}
-            <div className="col-span-2 md:col-span-4 flex justify-end">
+            <div className="col-span-1 sm:col-span-2 md:col-span-4 flex justify-end">
               <button
                 onClick={() => setFilters({ sport: '', area: '', maxPrice: 2000, skillLevel: '', searchQuery: '' })}
-                className="text-sm text-slate-400 hover:text-red-400 transition-colors"
+                className="text-xs font-bold text-rose-400 hover:text-rose-300 border-2 border-black bg-[#0d111d] px-3 py-1.5 rounded-md shadow-[2px_2px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
               >
                 Reset Filters
               </button>
@@ -166,19 +194,28 @@ function VenuesContent() {
         <div className="flex gap-2 mb-8 overflow-x-auto scrollbar-hide pb-2">
           <button
             onClick={() => setFilters((f) => ({ ...f, sport: '' }))}
-            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border ${!filters.sport ? 'bg-cyan-500 text-white border-transparent' : 'glass text-slate-300 border-white/10 hover:border-cyan-500/30'}`}
+            className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-bold transition-all border-2 border-black shadow-[2px_2px_0px_#000] ${!filters.sport ? 'bg-cyan-400 text-black' : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
           >
             All
           </button>
-          {SPORTS_LIST.map((sport) => (
-            <button
-              key={sport.value}
-              onClick={() => setFilters((f) => ({ ...f, sport: f.sport === sport.value ? '' : sport.value as Sport }))}
-              className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-medium transition-all border flex items-center gap-1.5 ${filters.sport === sport.value ? `bg-gradient-to-r ${sport.color} text-white border-transparent` : 'glass text-slate-300 border-white/10 hover:border-white/20'}`}
-            >
-              {sport.emoji} {sport.label}
-            </button>
-          ))}
+          {SPORTS_LIST.map((sport) => {
+            const isActive = filters.sport === sport.value;
+            let activeClass = '';
+            if (sport.value === 'badminton') activeClass = 'bg-yellow-400 text-black';
+            else if (sport.value === 'football') activeClass = 'bg-emerald-400 text-black';
+            else if (sport.value === 'swimming') activeClass = 'bg-cyan-400 text-black';
+            else if (sport.value === 'kabaddi') activeClass = 'bg-rose-400 text-black';
+
+            return (
+              <button
+                key={sport.value}
+                onClick={() => setFilters((f) => ({ ...f, sport: f.sport === sport.value ? '' : sport.value as Sport }))}
+                className={`flex-shrink-0 px-4 py-2 rounded-md text-sm font-bold transition-all border-2 border-black flex items-center gap-1.5 shadow-[2px_2px_0px_#000] ${isActive ? activeClass : 'bg-slate-900 text-slate-300 hover:bg-slate-800'}`}
+              >
+                {sport.emoji} {sport.label}
+              </button>
+            );
+          })}
         </div>
 
         {/* Content */}
@@ -199,6 +236,8 @@ function VenuesContent() {
               </button>
             </div>
           )
+        ) : view === 'map' ? (
+          <VenueMap venues={venues} />
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-6">
