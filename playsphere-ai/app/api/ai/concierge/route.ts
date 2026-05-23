@@ -1,8 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { LUCKNOW_VENUES } from '@/data/venues';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { callLLM, ChatMessage } from '@/lib/ai/llm';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,8 +9,6 @@ export async function POST(req: NextRequest) {
     if (!message) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     // Format venue data for Gemini context
     const venueContext = LUCKNOW_VENUES.map((v) => ({
@@ -52,30 +48,28 @@ Keep responses concise but informative. Be like a knowledgeable local friend who
 
 All prices are in Indian Rupees (₹). Lucknow areas include: Gomti Nagar, Gomti Nagar Extension, Aliganj, Hazratganj, Indira Nagar, Chowk, Ashiyana, Sultanpur Road, Aishbagh.`;
 
-    // Build chat with history
-    const chat = model.startChat({
-      history: [
-        {
-          role: 'user',
-          parts: [{ text: systemPrompt }],
-        },
-        {
-          role: 'model',
-          parts: [{ text: 'I\'m PlaySphere AI, your sports concierge for Lucknow! I can help you find and book the perfect sports facility. What sport are you looking for, and do you have any preferences on location or budget?' }],
-        },
-        ...(history || []).map((msg: { role: string; content: string }) => ({
-          role: msg.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: msg.content }],
-        })),
-      ],
-    });
+    // Build chat with history in OpenAI format
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemPrompt },
+      { role: 'assistant', content: 'I\'m PlaySphere AI, your sports concierge for Lucknow! I can help you find and book the perfect sports facility. What sport are you looking for, and do you have any preferences on location or budget?' }
+    ];
 
-    const result = await chat.sendMessage(message);
-    const response = result.response.text();
+    if (history && Array.isArray(history)) {
+      history.forEach((msg: { role: string; content: string }) => {
+        messages.push({
+          role: msg.role === 'assistant' ? 'assistant' : 'user',
+          content: msg.content
+        });
+      });
+    }
+
+    messages.push({ role: 'user', content: message });
+
+    const response = await callLLM(messages);
 
     return NextResponse.json({ response });
   } catch (error) {
-    console.error('Gemini API error:', error);
+    console.error('LLM API error:', error);
     return NextResponse.json(
       { error: 'AI service temporarily unavailable. Please try again.' },
       { status: 500 }

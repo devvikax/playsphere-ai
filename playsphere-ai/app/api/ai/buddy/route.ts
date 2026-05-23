@@ -1,13 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
+import { callLLM, ChatMessage } from '@/lib/ai/llm';
 
 export async function POST(req: NextRequest) {
   try {
     const { message, sport } = await req.json();
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-exp' });
 
     const systemContext = `You are AI Sports Buddy — a friendly, encouraging sports mentor for PlaySphere AI.
 
@@ -28,8 +24,12 @@ Guidelines:
 - Keep responses concise (3-5 bullet points or short paragraphs)
 - Use emojis sparingly but effectively`;
 
-    const result = await model.generateContent(`${systemContext}\n\nUser says: ${message}`);
-    const response = result.response.text();
+    const messages: ChatMessage[] = [
+      { role: 'system', content: systemContext },
+      { role: 'user', content: message }
+    ];
+
+    const response = await callLLM(messages);
 
     return NextResponse.json({ response });
   } catch (error) {

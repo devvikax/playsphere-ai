@@ -72,20 +72,20 @@ export function AIConciergePreview() {
   ];
 
   return (
-    <div className="glass rounded-2xl border border-indigo-500/20 overflow-hidden">
+    <div className="bg-[#080a10] border-3 border-black rounded-lg overflow-hidden shadow-[6px_6px_0px_#000]">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-white/5 bg-indigo-500/5">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center">
-          <Bot className="w-5 h-5 text-white" />
+      <div className="flex items-center gap-3 px-5 py-4 border-b-2 border-black bg-purple-600 text-white">
+        <div className="w-9 h-9 rounded-md bg-yellow-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000]">
+          <Bot className="w-5 h-5 text-black" />
         </div>
         <div>
-          <div className="font-display font-bold text-white text-sm">PlaySphere AI Concierge</div>
+          <div className="font-display font-black text-white uppercase tracking-wider text-sm [text-shadow:1.5px_1.5px_0px_#000]">PlaySphere AI Concierge</div>
           <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs text-emerald-400">Online • Powered by Gemini 2.5</span>
+            <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 border border-black animate-pulse" />
+            <span className="text-xs text-white/95 font-semibold">Online • Powered by Llama 3.1</span>
           </div>
         </div>
-        <Sparkles className="w-4 h-4 text-indigo-400 ml-auto" />
+        <Sparkles className="w-4 h-4 text-yellow-400 ml-auto fill-yellow-400" />
       </div>
 
       {/* Messages */}
@@ -93,10 +93,10 @@ export function AIConciergePreview() {
         {messages.map((msg, i) => (
           <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
-              className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+              className={`max-w-[85%] px-4 py-3 text-sm leading-relaxed ${
                 msg.role === 'user'
-                  ? 'bg-gradient-to-br from-cyan-500 to-indigo-600 text-white rounded-br-sm'
-                  : 'glass text-slate-200 rounded-bl-sm'
+                  ? 'bg-cyan-400 text-black border-2 border-black rounded-md rounded-br-none shadow-[2px_2px_0px_#000]'
+                  : 'bg-[#121620] text-slate-200 border-2 border-black rounded-md rounded-bl-none shadow-[2px_2px_0px_#000]'
               }`}
             >
               <pre className="font-sans whitespace-pre-wrap">{msg.content}</pre>
@@ -105,8 +105,8 @@ export function AIConciergePreview() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="glass rounded-2xl rounded-bl-sm px-4 py-3">
-              <Loader2 className="w-4 h-4 text-indigo-400 animate-spin" />
+            <div className="bg-[#121620] border-2 border-black rounded-md rounded-bl-none px-4 py-3 shadow-[2px_2px_0px_#000]">
+              <Loader2 className="w-4 h-4 text-cyan-400 animate-spin" />
             </div>
           </div>
         )}
@@ -114,12 +114,12 @@ export function AIConciergePreview() {
       </div>
 
       {/* Quick Prompts */}
-      <div className="px-4 pb-2 flex flex-wrap gap-2">
+      <div className="px-4 pb-3 flex flex-wrap gap-2">
         {QUICK_PROMPTS.map((prompt) => (
           <button
             key={prompt}
             onClick={() => sendMessage(prompt)}
-            className="text-xs glass rounded-full px-3 py-1.5 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/30 border border-white/10 transition-colors"
+            className="text-xs bg-[#121526] border-2 border-black rounded-md px-3 py-1.5 text-slate-300 font-bold hover:bg-cyan-400 hover:text-black hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[2px_2px_0px_#000] transition-all cursor-pointer"
           >
             {prompt}
           </button>
@@ -127,21 +127,21 @@ export function AIConciergePreview() {
       </div>
 
       {/* Input */}
-      <div className="flex items-center gap-3 p-4 border-t border-white/5">
+      <div className="flex items-center gap-3 p-4 border-t-2 border-black">
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
           placeholder="Ask me anything about sports venues..."
-          className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/20 transition-all"
+          className="flex-1 min-w-0"
         />
         <button
           onClick={() => sendMessage()}
           disabled={!input.trim() || loading}
-          className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 transition-opacity flex-shrink-0"
+          className="w-11 h-11 rounded-md bg-purple-600 text-white font-bold border-2 border-black flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed shadow-[2px_2px_0px_#000] hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[3px_3px_0px_#000] active:translate-x-[1px] active:translate-y-[1px] active:shadow-[1px_1px_0px_#000] transition-all flex-shrink-0 cursor-pointer"
         >
-          {loading ? <Loader2 className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
+          {loading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : <Send className="w-4 h-4 text-white fill-white" />}
         </button>
       </div>
     </div>
