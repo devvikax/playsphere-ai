@@ -1,0 +1,17 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/admin/page": "/admin",
+  "/api/ai/buddy/route": "/api/ai/buddy",
+  "/api/ai/concierge/route": "/api/ai/concierge",
+  "/api/ai/discover/route": "/api/ai/discover",
+  "/api/seed/route": "/api/seed",
+  "/auth/login/page": "/auth/login",
+  "/auth/signup/page": "/auth/signup",
+  "/dashboard/page": "/dashboard",
+  "/favicon.ico/route": "/favicon.ico",
+  "/owner/page": "/owner",
+  "/page": "/",
+  "/venues/[id]/page": "/venues/[id]",
+  "/venues/page": "/venues"
+}

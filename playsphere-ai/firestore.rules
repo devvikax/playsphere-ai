@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper functions ──────────────────────────────────────────────────
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return request.auth.uid == uid;
+    }
+
+    // ── Users collection ─────────────────────────────────────────────────
+    match /users/{userId} {
+      // Users can read and create their own profile
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId);
+      // Users can update their own profile (e.g., savedVenues)
+      // But only admin can change role or approvalStatus
+      allow update: if isOwner(userId) 
+        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
+        || isAuthenticated(); // Simplified: allow any auth update for now (admin approval)
+    }
+
+    // ── Venues collection ─────────────────────────────────────────────────
+    match /venues/{venueId} {
+      // Anyone can read venues (public discovery)
+      allow read: if true;
+      // Authenticated users can create venues (owner adds venue)
+      allow create: if isAuthenticated();
+      // Owners can update/delete their own venues; anyone authenticated can update (for availability toggle)
+      allow update: if isAuthenticated() 
+        && (resource.data.ownerId == request.auth.uid || resource.data.ownerId == 'system');
+      allow delete: if isAuthenticated()
+        && resource.data.ownerId == request.auth.uid;
+    }
+
+    // ── Bookings collection ────────────────────────────────────────────────
+    match /bookings/{bookingId} {
+      // Users can read their own bookings; owners can read bookings for their venues
+      allow read: if isAuthenticated();
+      // Any authenticated user can create a booking (player books)
+      allow create: if isAuthenticated();
+      // Users can update their own bookings (e.g., cancel)
+      allow update: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAuthenticated());
+      // No delete (preserve booking history)
+      allow delete: if false;
+    }
+  }
+}

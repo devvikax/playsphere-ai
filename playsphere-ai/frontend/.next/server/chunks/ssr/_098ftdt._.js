@@ -1,0 +1,3 @@
+module.exports=[75160,a=>{"use strict";let b=(0,a.i(64831).default)("loader-circle",[["path",{d:"M21 12a9 9 0 1 1-6.219-8.56",key:"13zald"}]]);a.s(["Loader2",0,b],75160)},57137,a=>{"use strict";var b=a.i(87924),c=a.i(72131),d=a.i(50944),e=a.i(92958),f=a.i(75160);a.s(["default",0,function({children:a}){let{user:g,loading:h,isAdmin:i}=(0,e.useAuth)(),j=(0,d.useRouter)();return((0,c.useEffect)(()=>{!h&&(g?i||j.push("/dashboard"):j.push("/auth/login?redirect=/admin"))},[g,h,i,j]),h)?(0,b.jsx)("div",{className:"min-h-screen flex items-center justify-center",children:(0,b.jsx)(f.Loader2,{className:"w-8 h-8 text-purple-400 animate-spin"})}):g&&i?(0,b.jsx)(b.Fragment,{children:a}):null}])}];
+
+//# sourceMappingURL=_098ftdt._.js.map
