@@ -9,7 +9,7 @@
 ## Must-Haves (Milestone v3.0)
 
 - [x] Phase 1 — Architecture & Role System Verified
-- [ ] Phase 2 — Authentication & Approval Flow Stable
+- [x] Phase 2 — Authentication & Approval Flow Stable
 - [ ] Phase 3 — Owner System & Venue Management Fully Functional
 - [ ] Phase 4 — Booking + Ticket + Dashboard Integration Synced in Real-Time
 - [ ] Phase 5 — AI Grounding + Concierge + Buddy Hallucination-Free
@@ -29,7 +29,7 @@
 ---
 
 ### Phase 2: Authentication & Approval Flow Verification
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Phase File**: `.gsd/phases/phase-2.md`  
 **Objective**: Verify Player login/signup paths (Email & Google), Owner signup card selectors, and whitelisted Admin logins. Test auth refresh persistence.
 
