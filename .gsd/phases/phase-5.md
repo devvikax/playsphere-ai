@@ -1,129 +1,32 @@
-# Phase 5: QA Polish & Build Verification
+# Phase 5: AI Grounding + Concierge + Buddy Verification
 
-> **Status**: ✅ Completed
-> **Objective**: Full project-wide QA audit. Fix every broken button, dead link, placeholder, and unstable workflow. Ensure `npm run build` passes with zero errors.
-
----
-
-## QA Audit Checklist
-
-### 🔐 Authentication Flow
-- [ ] Email signup → profile created in Firestore → redirect to dashboard
-- [ ] Email login → redirect to dashboard
-- [ ] Google login → redirect to dashboard
-- [ ] Invalid email → clear error message shown
-- [ ] Wrong password → clear error message shown
-- [ ] Already logged in → visiting /auth/login redirects to /dashboard
-- [ ] Logout → cookie cleared → redirect to home
-- [ ] Refresh dashboard → stays logged in (Phase 2 fix verified)
-
-### 🗺️ Landing Page (`/`)
-- [ ] Hero section loads cleanly
-- [ ] AI Concierge preview works
-- [ ] Sports categories link to `/venues?sport=X`
-- [ ] Featured venues section populates
-- [ ] "Book Now" CTAs navigate correctly
-- [ ] No "Gemini" text references remain
-- [ ] AI Discovery insights section shows (Phase 4)
-- [ ] Google Maps section renders (no API key error)
-- [ ] Footer updated ("Powered by Llama 3.1")
-
-### 🏟️ Venues Page (`/venues`)
-- [ ] Grid view shows all venues
-- [ ] Search works correctly
-- [ ] Sport filter works
-- [ ] Area filter works
-- [ ] Skill level filter works
-- [ ] Price slider works
-- [ ] Reset filters works
-- [ ] Map view renders with venue pins
-- [ ] AI concierge tab opens and works
-- [ ] Empty state shown when no venues match filters
-- [ ] Discovery insights panel shows (Phase 4)
-
-### 🏟️ Venue Detail (`/venues/[id]`)
-- [ ] Venue details load correctly
-- [ ] Slot picker renders
-- [ ] Already-booked slots shown as unavailable
-- [ ] Date picker works
-- [ ] Sport-specific pricing shown
-- [ ] "Book Slot" button works when logged in
-- [ ] "Book Slot" redirects to login when not logged in
-- [ ] Booking confirmation feedback shown
-- [ ] Redirect to dashboard after booking
-
-### 📊 Dashboard (`/dashboard`)
-- [ ] Bookings tab: real-time data (Phase 3 fix verified)
-- [ ] Upcoming bookings shown with correct status badge
-- [ ] History tab shows completed/cancelled bookings
-- [ ] Cancel button works and updates in real time
-- [ ] Saved venues tab shows bookmarked venues
-- [ ] AI Concierge tab works (scroll fix verified, Phase 2)
-- [ ] Profile tab shows user info, total bookings, saved count
-- [ ] No admin toggle visible
-
-### 🤖 AI Features
-- [ ] Concierge: "beginner badminton near Gomti Nagar" → relevant venues returned
-- [ ] Concierge: "football turf under ₹1000" → relevant results
-- [ ] Concierge: conversation history maintained across messages
-- [ ] Sports Buddy: gives beginner sports guidance
-- [ ] Discovery insights: 3-4 cards loaded on landing and venues page
-- [ ] Graceful error when LLM API is unavailable
-
-### 📱 Mobile Responsiveness
-- [ ] Navbar hamburger menu works on mobile
-- [ ] Venue cards responsive on small screens
-- [ ] AI chat usable on mobile
-- [ ] Dashboard tabs scroll horizontally on mobile
-- [ ] Booking slot picker usable on mobile
-- [ ] Forms (login, signup) usable on mobile
+> **Status**: ⬜ Not Started  
+> **Objective**: Verify concierge and mentor AI route query structures using live Firestore database connections rather than static mock files.
 
 ---
 
-## Build Verification
+## Context
 
-### Run Build
-```bash
-cd playsphere-ai
-npm run build
-```
-
-### Common TypeScript Errors to Fix
-- Unused imports (ESLint no-unused-vars)
-- `any` types where specific types exist
-- Missing `Suspense` wrappers on `useSearchParams()` pages
-- Missing `"use client"` directives on interactive components
-- Missing `key` props on mapped elements
-
-### Performance Checks
-- [ ] No large client-side bundles (check Next.js build output)
-- [ ] Images use proper `alt` attributes
-- [ ] No `console.error` / `console.log` left in production paths
+We need to inspect and confirm:
+1. Both AI Concierge (`/api/ai/concierge`) and Sports Buddy (`/api/ai/buddy`) retrieve venues dynamically from Firestore using `getApprovedVenues()`.
+2. Static lists are only used as fallback layers.
+3. System prompts constrain recommendations strictly to returned Firestore venues to prevent hallucinations.
+4. Sports Buddy frontend component functions correctly, parses history threads, and formats responses nicely.
 
 ---
 
-## Final Cleanup
+## Files to Inspect & Verify
 
-### Files to Delete (if not done in Phase 1)
-- `playsphere-ai/test_saia.js`
-- `playsphere-ai/test_local.js`
-- `playsphere-ai/test_geai_headers.js`
-- `playsphere-ai/read_logs.js`
+### [INSPECT] [app/api/ai/concierge/route.ts](file:///c:/Users/vikas/OneDrive/Desktop/Project_05_APL/playsphere-ai/app/api/ai/concierge/route.ts)
+- Confirm RAG prompt construction.
 
-### Text Updates
-| Location | Old Text | New Text |
-|----------|----------|----------|
-| `AIConciergePreview.tsx` | "Powered by Gemini 2.5" | "Powered by Llama 3.1" |
-| `Footer.tsx` | "Google Gemini 2.5" | "Llama 3.1 via Groq" |
-| `app/page.tsx` | "Gemini understands..." | "AI understands..." |
-| `app/page.tsx` | "Powered by Gemini 2.5" | "Powered by Llama 3.1" |
+### [INSPECT] [components/ai/SportsBuddy.tsx](file:///c:/Users/vikas/OneDrive/Desktop/Project_05_APL/playsphere-ai/components/ai/SportsBuddy.tsx)
+- Check quick prompts and message rendering.
 
 ---
 
-## Verification Sign-off
+## Verification Steps
 
-- [ ] Full demo flow completed without errors: land → search → venue → book → dashboard
-- [ ] AI responds in under 5 seconds end-to-end
-- [ ] No console errors in browser DevTools
-- [ ] `npm run build` — zero TypeScript/ESLint errors
-- [ ] Build size within acceptable range (< 5MB first load JS)
+- [ ] Verify RAG integration queries Firestore collections.
+- [ ] Confirm no hallucinatory venue listings occur on test prompts.
+- [ ] Test Sports Buddy frontend chat tabs and history chains.
