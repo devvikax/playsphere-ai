@@ -13,7 +13,7 @@
 - [x] Phase 3 — Owner System & Venue Management Fully Functional
 - [x] Phase 4 — Booking + Ticket + Dashboard Integration Synced in Real-Time
 - [x] Phase 5 — AI Grounding + Concierge + Buddy Hallucination-Free
-- [ ] Phase 6 — Maps + Discovery + Marketplace Logic Responsive
+- [x] Phase 6 — Maps + Discovery + Marketplace Logic Responsive
 - [ ] Phase 7 — Bug Fixes + QA + Stability Swept
 - [ ] Phase 8 — Final Demo Walkthrough Completed
 
@@ -57,7 +57,7 @@
 ---
 
 ### Phase 6: Maps + Discovery + Venue Marketplace Verification
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Phase File**: `.gsd/phases/phase-6.md`  
 **Objective**: Verify Google Maps loading, markers, InfoWindow custom dark styles, view selectors, and fallback logic.
 
