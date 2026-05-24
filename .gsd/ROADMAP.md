@@ -1,55 +1,76 @@
 # ROADMAP.md — PlaySphere AI
 
-> **Current Phase**: Phase 1
-> **Milestone**: v2.0 — Demo-Ready Release
-> **AI Strategy**: Hosted LLM (Groq API / OpenRouter) — no local Ollama required
+> **Current Milestone**: v3.0 — 3-Role AI Sports Marketplace  
+> **Status**: Verification and Stabilization Phase  
+> **Last Updated**: 2026-05-24
 
 ---
 
-## Must-Haves (from SPEC)
+## Must-Haves (Milestone v3.0)
 
-- [ ] Gemini completely removed, hosted LLM fully integrated
-- [ ] No local dependencies — fully cloud-API driven
-- [ ] Chat scroll bug fixed
-- [ ] Auth session persistence working
-- [ ] Dashboard bookings showing real Firestore data
-- [ ] Booking flow end-to-end working
-- [ ] Admin system deleted, AI Venue Discovery added
-- [ ] Build passes with zero errors
+- [ ] Phase 1 — Architecture & Role System Verified
+- [ ] Phase 2 — Authentication & Approval Flow Stable
+- [ ] Phase 3 — Owner System & Venue Management Fully Functional
+- [ ] Phase 4 — Booking + Ticket + Dashboard Integration Synced in Real-Time
+- [ ] Phase 5 — AI Grounding + Concierge + Buddy Hallucination-Free
+- [ ] Phase 6 — Maps + Discovery + Marketplace Logic Responsive
+- [ ] Phase 7 — Bug Fixes + QA + Stability Swept
+- [ ] Phase 8 — Final Demo Walkthrough Completed
 
 ---
 
 ## Phases
 
-### Phase 1: Hosted LLM AI Migration
-**Status**: ⬜ Not Started
-**Phase File**: `.gsd/phases/phase-1.md`
-**Objective**: Replace Gemini with a hosted open-source LLM (Groq API with Llama 3.1 8B). Remove all Gemini dependencies. Implement modular, environment-variable-driven AI service layer. Preserve all AI features with retrieval-grounded Firestore context.
+### Phase 1: Architecture & Role System Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-1.md`  
+**Objective**: Verify Player, Owner, and Admin role definitions, Firestore storage, role guards, route protection, and dashboard routing logic.
 
 ---
 
-### Phase 2: Critical Bug Fixes
-**Status**: ⬜ Not Started
-**Phase File**: `.gsd/phases/phase-2.md`
-**Objective**: Eliminate the chat scroll hijack bug and the auth session loss on refresh. These are the two highest-impact UX bugs.
+### Phase 2: Authentication & Approval Flow Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-2.md`  
+**Objective**: Verify Player login/signup paths (Email & Google), Owner signup card selectors, and whitelisted Admin logins. Test auth refresh persistence.
 
 ---
 
-### Phase 3: Dashboard & Booking Repair
-**Status**: ⬜ Not Started
-**Phase File**: `.gsd/phases/phase-3.md`
-**Objective**: Replace one-shot Firestore fetch with real-time listeners. Fix booking creation, cancellation, and dashboard sync. Remove admin role toggle.
+### Phase 3: Owner System & Venue Management Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-3.md`  
+**Objective**: Verify Owner dashboard pending approval guard state blocker screen, approved state workspace tabs, and full venue CRUD operations.
 
 ---
 
-### Phase 4: Admin Removal + AI Venue Discovery
-**Status**: ⬜ Not Started
-**Phase File**: `.gsd/phases/phase-4.md`
-**Objective**: Delete the entire admin system. Add AI-powered venue discovery insight cards — showing underrepresented areas, venue gaps, and smart recommendations using Firestore distribution analysis.
+### Phase 4: Booking + Ticket + Dashboard Integration Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-4.md`  
+**Objective**: Verify end-to-end player booking path, ticket generator (`PS-[SPORT]-2026-[RANDOM]`), real-time synchronization, and dashboard list updates.
 
 ---
 
-### Phase 5: QA Polish & Build Verification
-**Status**: ✅ Complete
-**Phase File**: `.gsd/phases/phase-5.md`
-**Objective**: Full QA pass across all pages, features, and mobile breakpoints. Fix all broken elements. Verify `npm run build` passes with zero errors.
+### Phase 5: AI Grounding + Concierge + Buddy Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-5.md`  
+**Objective**: Verify concierge and mentor AI route query structures using live Firestore database connections rather than static mock files.
+
+---
+
+### Phase 6: Maps + Discovery + Venue Marketplace Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-6.md`  
+**Objective**: Verify Google Maps loading, markers, InfoWindow custom dark styles, view selectors, and fallback logic.
+
+---
+
+### Phase 7: Bug Fixes + QA + Stability Sweeps
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-7.md`  
+**Objective**: Sweep out remaining bugs, resolve scroll-hijack issues, check 404 router assets, and audit Firestore rules/env properties.
+
+---
+
+### Phase 8: Final Demo Verification
+**Status**: ⬜ Not Started  
+**Phase File**: `.gsd/phases/phase-8.md`  
+**Objective**: Perform dry runs simulating Player, Owner, and Admin flows, and output the final QA Report.
