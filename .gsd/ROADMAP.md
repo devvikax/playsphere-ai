@@ -15,7 +15,7 @@
 - [x] Phase 5 — AI Grounding + Concierge + Buddy Hallucination-Free
 - [x] Phase 6 — Maps + Discovery + Marketplace Logic Responsive
 - [x] Phase 7 — Bug Fixes + QA + Stability Swept
-- [ ] Phase 8 — Final Demo Walkthrough Completed
+- [x] Phase 8 — Final Demo Walkthrough Completed
 
 ---
 
@@ -71,6 +71,6 @@
 ---
 
 ### Phase 8: Final Demo Verification
-**Status**: ⬜ Not Started  
+**Status**: ✅ Complete  
 **Phase File**: `.gsd/phases/phase-8.md`  
 **Objective**: Perform dry runs simulating Player, Owner, and Admin flows, and output the final QA Report.
