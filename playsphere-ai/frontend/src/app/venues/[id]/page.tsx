@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { MapPin, Star, Clock, ArrowLeft, Calendar, Check, Loader2, Shield, Zap, Ticket } from 'lucide-react';
-import { LUCKNOW_VENUES } from '@/shared/constants/venues';
 import { Venue } from '@/shared/types';
 import { formatCurrency, getSportEmoji, getSportColor, getSkillBadgeColor, generateTicketNumber, cn } from '@/shared/helpers/utils';
 import { generateTimeSlots } from '@/shared/helpers/pricing';
@@ -35,17 +34,11 @@ export default function VenueDetailPage() {
       getVenueById(id)
         .then((dbVenue) => {
           if (!active) return;
-          if (dbVenue) {
-            setVenue(dbVenue);
-          } else {
-            const found = LUCKNOW_VENUES.find((v) => v.id === id);
-            setVenue(found || null);
-          }
+          setVenue(dbVenue || null);
         })
         .catch(() => {
           if (!active) return;
-          const found = LUCKNOW_VENUES.find((v) => v.id === id);
-          setVenue(found || null);
+          setVenue(null);
         })
         .finally(() => {
           if (active) setVenueLoading(false);

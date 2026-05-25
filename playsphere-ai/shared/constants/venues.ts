@@ -305,6 +305,10 @@ const RAW_LUCKNOW_VENUES = [
   },
 ];
 
+/**
+ * @deprecated Use live Firestore query APIs instead.
+ * Retained solely as seed data source for backend/firebase/seed.ts.
+ */
 export const LUCKNOW_VENUES: SeedVenue[] = RAW_LUCKNOW_VENUES.map(venue => ({
   ...venue,
   ...SEED_DEFAULTS,

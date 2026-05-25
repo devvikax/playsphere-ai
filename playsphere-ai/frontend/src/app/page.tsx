@@ -1,12 +1,14 @@
 import Link from 'next/link';
 import { ArrowRight, Bot, MapPin, Star, Zap, ChevronRight, Shield, TrendingUp } from 'lucide-react';
-import { LUCKNOW_VENUES, SPORTS_LIST } from '@/shared/constants/venues';
+import { SPORTS_LIST } from '@/shared/constants/venues';
+import { getApprovedVenues } from '@/backend/firebase/firestore';
 import { VenueCard } from '@/components/venue/VenueCard';
 import { AIConciergePreview } from '@/components/ai/AIConciergePreview';
 import { VenueDiscoveryInsights } from '@/components/ai/VenueDiscoveryInsights';
 
-export default function HomePage() {
-  const featuredVenues = LUCKNOW_VENUES.filter((v) => v.rating >= 4.7).slice(0, 3);
+export default async function HomePage() {
+  const venues = await getApprovedVenues().catch(() => []);
+  const featuredVenues = venues.filter((v) => (v.rating || 0) >= 4.7).slice(0, 3);
 
   return (
     <div className="min-h-screen">

@@ -1,13 +1,9 @@
-import { LUCKNOW_VENUES } from '@/shared/constants/venues';
 import { getApprovedVenues } from '@/backend/firebase/firestore';
 import { callLLM, ChatMessage } from '@/backend/ai/llm';
 
 export async function handleBuddyRequest(message: string, sport: string | undefined, history: { role: string; content: string }[]) {
   // ── LIVE FIRESTORE GROUNDING ───────────────────────────────────────────
-  let liveVenues = await getApprovedVenues().catch(() => []);
-  if (liveVenues.length === 0) {
-    liveVenues = LUCKNOW_VENUES.filter((v) => v.available) as typeof liveVenues;
-  }
+  const liveVenues = await getApprovedVenues().catch(() => []);
 
   // Filter relevant venues for this sport if specified
   const relevantVenues = sport

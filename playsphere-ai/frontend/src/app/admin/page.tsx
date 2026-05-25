@@ -5,7 +5,12 @@ import {
   Shield, Building2, Calendar, Clock, CheckCircle, XCircle,
   Loader2, Ticket, User, ChevronRight, BarChart3, AlertCircle
 } from 'lucide-react';
-import { getAllUsers, getAllVenues, getAllBookings, updateOwnerApproval } from '@/backend/firebase/firestore';
+import {
+  updateOwnerApproval,
+  subscribeAllUsers,
+  subscribeAllVenues,
+  subscribeAllBookings
+} from '@/backend/firebase/firestore';
 import { UserProfile, Venue, Booking } from '@/shared/types';
 import { formatCurrency, formatDate, getSportEmoji, cn } from '@/shared/helpers/utils';
 
@@ -26,28 +31,48 @@ export default function AdminDashboardPage() {
   };
 
   useEffect(() => {
-    async function fetchAll() {
-      setLoading(true);
-      try {
-        const [u, v, b] = await Promise.all([getAllUsers(), getAllVenues(), getAllBookings()]);
-        setUsers(u);
-        setVenues(v);
-        setBookings(b);
-      } finally {
+    let usersLoaded = false;
+    let venuesLoaded = false;
+    let bookingsLoaded = false;
+
+    const checkLoading = () => {
+      if (usersLoaded && venuesLoaded && bookingsLoaded) {
         setLoading(false);
       }
-    }
-    fetchAll();
+    };
+
+    const unsubUsers = subscribeAllUsers((u) => {
+      setUsers(u);
+      usersLoaded = true;
+      checkLoading();
+    });
+
+    const unsubVenues = subscribeAllVenues((v) => {
+      setVenues(v);
+      venuesLoaded = true;
+      checkLoading();
+    });
+
+    const unsubBookings = subscribeAllBookings((b) => {
+      setBookings(b);
+      bookingsLoaded = true;
+      checkLoading();
+    });
+
+    return () => {
+      unsubUsers();
+      unsubVenues();
+      unsubBookings();
+    };
   }, []);
 
   const handleApprove = async (uid: string) => {
     setApprovingId(uid);
     try {
       await updateOwnerApproval(uid, 'approved');
-      setUsers((prev) =>
-        prev.map((u) => (u.uid === uid ? { ...u, approvalStatus: 'approved' } : u))
-      );
       showSuccess('✅ Owner approved!');
+    } catch (err) {
+      console.error('Error approving owner:', err);
     } finally {
       setApprovingId(null);
     }
@@ -57,10 +82,9 @@ export default function AdminDashboardPage() {
     setApprovingId(uid);
     try {
       await updateOwnerApproval(uid, 'rejected');
-      setUsers((prev) =>
-        prev.map((u) => (u.uid === uid ? { ...u, approvalStatus: 'rejected' } : u))
-      );
       showSuccess('🚫 Owner rejected.');
+    } catch (err) {
+      console.error('Error rejecting owner:', err);
     } finally {
       setApprovingId(null);
     }
@@ -269,22 +293,30 @@ export default function AdminDashboardPage() {
             <h2 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
               <User className="w-5 h-5 text-cyan-400" /> Players ({players.length})
             </h2>
-            {players.map((p) => (
-              <div key={p.uid} className="glass rounded-lg p-4 border-2 border-black flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-md bg-cyan-900/30 border-2 border-black flex items-center justify-center text-cyan-400 font-bold shadow-[2px_2px_0px_#000]">
-                    {p.displayName?.[0]?.toUpperCase() || 'P'}
-                  </div>
-                  <div>
-                    <div className="font-bold text-white text-sm">{p.displayName}</div>
-                    <div className="text-slate-400 text-xs">{p.email}</div>
-                  </div>
-                </div>
-                <div className="text-slate-400 text-xs">
-                  {bookings.filter((b) => b.userId === p.uid).length} bookings
-                </div>
+            {players.length === 0 ? (
+              <div className="glass rounded-lg p-12 text-center border-2 border-black">
+                <div className="text-4xl mb-3">👥</div>
+                <h3 className="font-display text-lg font-bold text-white mb-1">No Players Registered</h3>
+                <p className="text-slate-400 text-sm">When users sign up as players, they will appear here.</p>
               </div>
-            ))}
+            ) : (
+              players.map((p) => (
+                <div key={p.uid} className="glass rounded-lg p-4 border-2 border-black flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-md bg-cyan-900/30 border-2 border-black flex items-center justify-center text-cyan-400 font-bold shadow-[2px_2px_0px_#000]">
+                      {p.displayName?.[0]?.toUpperCase() || 'P'}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-sm">{p.displayName}</div>
+                      <div className="text-slate-400 text-xs">{p.email}</div>
+                    </div>
+                  </div>
+                  <div className="text-slate-400 text-xs">
+                    {bookings.filter((b) => b.userId === p.uid).length} bookings
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         )}
 
@@ -294,37 +326,45 @@ export default function AdminDashboardPage() {
             <h2 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-amber-400" /> Venue Owners ({owners.length})
             </h2>
-            {owners.map((o) => {
-              const ownerVenues = venues.filter((v) => v.ownerId === o.uid);
-              const ownerBookings = bookings.filter((b) => ownerVenues.some((v) => v.id === b.venueId));
-              return (
-                <div key={o.uid} className="glass rounded-lg p-4 border-2 border-black">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-md bg-amber-900/30 border-2 border-black flex items-center justify-center text-amber-400 font-bold shadow-[2px_2px_0px_#000]">
-                        {o.displayName?.[0]?.toUpperCase() || 'O'}
+            {owners.length === 0 ? (
+              <div className="glass rounded-lg p-12 text-center border-2 border-black">
+                <div className="text-4xl mb-3">🏢</div>
+                <h3 className="font-display text-lg font-bold text-white mb-1">No Venue Owners Registered</h3>
+                <p className="text-slate-400 text-sm">When users sign up as owners, they will appear here.</p>
+              </div>
+            ) : (
+              owners.map((o) => {
+                const ownerVenues = venues.filter((v) => v.ownerId === o.uid);
+                const ownerBookings = bookings.filter((b) => ownerVenues.some((v) => v.id === b.venueId));
+                return (
+                  <div key={o.uid} className="glass rounded-lg p-4 border-2 border-black">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-md bg-amber-900/30 border-2 border-black flex items-center justify-center text-amber-400 font-bold shadow-[2px_2px_0px_#000]">
+                          {o.displayName?.[0]?.toUpperCase() || 'O'}
+                        </div>
+                        <div>
+                          <div className="font-bold text-white text-sm">{o.displayName}</div>
+                          <div className="text-slate-400 text-xs">{o.email}</div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-bold text-white text-sm">{o.displayName}</div>
-                        <div className="text-slate-400 text-xs">{o.email}</div>
-                      </div>
+                      <span className={cn(
+                        'text-xs font-bold px-2.5 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_#000]',
+                        o.approvalStatus === 'approved' ? 'bg-emerald-400 text-black' :
+                        o.approvalStatus === 'pending' ? 'bg-amber-400 text-black' : 'bg-rose-400 text-black'
+                      )}>
+                        {o.approvalStatus || 'pending'}
+                      </span>
                     </div>
-                    <span className={cn(
-                      'text-xs font-bold px-2.5 py-1 rounded-md border-2 border-black shadow-[2px_2px_0px_#000]',
-                      o.approvalStatus === 'approved' ? 'bg-emerald-400 text-black' :
-                      o.approvalStatus === 'pending' ? 'bg-amber-400 text-black' : 'bg-rose-400 text-black'
-                    )}>
-                      {o.approvalStatus || 'pending'}
-                    </span>
+                    <div className="flex gap-4 mt-3 text-xs text-slate-400">
+                      <span>{ownerVenues.length} venues</span>
+                      <span>•</span>
+                      <span>{ownerBookings.length} total bookings</span>
+                    </div>
                   </div>
-                  <div className="flex gap-4 mt-3 text-xs text-slate-400">
-                    <span>{ownerVenues.length} venues</span>
-                    <span>•</span>
-                    <span>{ownerBookings.length} total bookings</span>
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
 
@@ -334,30 +374,38 @@ export default function AdminDashboardPage() {
             <h2 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Building2 className="w-5 h-5 text-indigo-400" /> All Venues ({venues.length})
             </h2>
-            {venues.map((v) => {
-              const owner = users.find((u) => u.uid === v.ownerId);
-              return (
-                <div key={v.id} className="glass rounded-lg p-4 border-2 border-black flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl bg-slate-900 w-11 h-11 flex items-center justify-center rounded-md border border-black shadow-[2px_2px_0px_#000]">
-                      {getSportEmoji(v.sport)}
-                    </div>
-                    <div>
-                      <div className="font-bold text-white text-sm">{v.name}</div>
-                      <div className="text-slate-400 text-xs">
-                        {v.area} • {owner ? owner.displayName : 'System'} • {formatCurrency(v.price)}/hr
+            {venues.length === 0 ? (
+              <div className="glass rounded-lg p-12 text-center border-2 border-black">
+                <div className="text-4xl mb-3">📍</div>
+                <h3 className="font-display text-lg font-bold text-white mb-1">No Venues Registered</h3>
+                <p className="text-slate-400 text-sm">When owners list venues on the platform, they will appear here.</p>
+              </div>
+            ) : (
+              venues.map((v) => {
+                const owner = users.find((u) => u.uid === v.ownerId);
+                return (
+                  <div key={v.id} className="glass rounded-lg p-4 border-2 border-black flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-2xl bg-slate-900 w-11 h-11 flex items-center justify-center rounded-md border border-black shadow-[2px_2px_0px_#000]">
+                        {getSportEmoji(v.sport)}
+                      </div>
+                      <div>
+                        <div className="font-bold text-white text-sm">{v.name}</div>
+                        <div className="text-slate-400 text-xs">
+                          {v.area} • {owner ? owner.displayName : 'System'} • {formatCurrency(v.price)}/hr
+                        </div>
                       </div>
                     </div>
+                    <span className={cn(
+                      'text-xs font-bold px-2.5 py-1 rounded-md border-2 border-black',
+                      v.available ? 'bg-emerald-400 text-black' : 'bg-rose-400 text-black'
+                    )}>
+                      {v.available ? 'Active' : 'Inactive'}
+                    </span>
                   </div>
-                  <span className={cn(
-                    'text-xs font-bold px-2.5 py-1 rounded-md border-2 border-black',
-                    v.available ? 'bg-emerald-400 text-black' : 'bg-rose-400 text-black'
-                  )}>
-                    {v.available ? 'Active' : 'Inactive'}
-                  </span>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         )}
 
@@ -367,33 +415,41 @@ export default function AdminDashboardPage() {
             <h2 className="font-display text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-rose-400" /> All Bookings ({bookings.length})
             </h2>
-            {bookings.map((b) => (
-              <div key={b.id} className="glass rounded-lg p-4 border-2 border-black flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="text-2xl bg-slate-900 w-10 h-10 flex items-center justify-center rounded-md border border-black shadow-[2px_2px_0px_#000]">
-                    {getSportEmoji(b.sport)}
-                  </div>
-                  <div>
-                    <div className="font-bold text-white text-sm">{b.venueName}</div>
-                    <div className="text-slate-400 text-xs">{b.playerName || 'Player'} • {formatDate(b.date)} • {b.slot}</div>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <Ticket className="w-3.5 h-3.5 text-cyan-400" />
-                      <span className="font-mono text-xs text-cyan-400 font-bold">{b.ticketNumber}</span>
+            {bookings.length === 0 ? (
+              <div className="glass rounded-lg p-12 text-center border-2 border-black">
+                <div className="text-4xl mb-3">📅</div>
+                <h3 className="font-display text-lg font-bold text-white mb-1">No Bookings Made</h3>
+                <p className="text-slate-400 text-sm">When players make court or turf bookings, they will show up here.</p>
+              </div>
+            ) : (
+              bookings.map((b) => (
+                <div key={b.id} className="glass rounded-lg p-4 border-2 border-black flex flex-col md:flex-row items-start md:items-center justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className="text-2xl bg-slate-900 w-10 h-10 flex items-center justify-center rounded-md border border-black shadow-[2px_2px_0px_#000]">
+                      {getSportEmoji(b.sport)}
+                    </div>
+                    <div>
+                      <div className="font-bold text-white text-sm">{b.venueName}</div>
+                      <div className="text-slate-400 text-xs">{b.playerName || 'Player'} • {formatDate(b.date)} • {b.slot}</div>
+                      <div className="flex items-center gap-1.5 mt-1">
+                        <Ticket className="w-3.5 h-3.5 text-cyan-400" />
+                        <span className="font-mono text-xs text-cyan-400 font-bold">{b.ticketNumber}</span>
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-3 ml-auto">
+                    <span className={cn(
+                      'text-xs font-bold px-2.5 py-1.5 rounded-md border-2 border-black shadow-[2px_2px_0px_#000]',
+                      b.status === 'upcoming' ? 'bg-cyan-400 text-black' :
+                      b.status === 'completed' ? 'bg-emerald-400 text-black' : 'bg-rose-400 text-black'
+                    )}>
+                      {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
+                    </span>
+                    <span className="font-bold text-white">{formatCurrency(b.price)}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 ml-auto">
-                  <span className={cn(
-                    'text-xs font-bold px-2.5 py-1.5 rounded-md border-2 border-black shadow-[2px_2px_0px_#000]',
-                    b.status === 'upcoming' ? 'bg-cyan-400 text-black' :
-                    b.status === 'completed' ? 'bg-emerald-400 text-black' : 'bg-rose-400 text-black'
-                  )}>
-                    {b.status.charAt(0).toUpperCase() + b.status.slice(1)}
-                  </span>
-                  <span className="font-bold text-white">{formatCurrency(b.price)}</span>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         )}
       </div>

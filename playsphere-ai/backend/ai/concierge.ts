@@ -1,16 +1,11 @@
-import { LUCKNOW_VENUES } from '@/shared/constants/venues';
 import { getApprovedVenues } from '@/backend/firebase/firestore';
 import { callLLM, ChatMessage } from '@/backend/ai/llm';
 
 export async function handleConciergeRequest(message: string, history: { role: string; content: string }[]) {
   // ── LIVE FIRESTORE GROUNDING ───────────────────────────────────────────
-  // Fetch approved + available venues from Firestore (single source of truth)
-  // Fall back to static seed data if Firestore is unavailable
-  let liveVenues = await getApprovedVenues().catch(() => []);
-  if (liveVenues.length === 0) {
-    // Graceful fallback to seed data so AI is never empty-handed
-    liveVenues = LUCKNOW_VENUES.filter((v) => v.available) as typeof liveVenues;
-  }
+  // Firestore is the single source of truth. No static fallback.
+  // If there are no venues, we inform the AI so it can respond honestly.
+  const liveVenues = await getApprovedVenues().catch(() => []);
 
   const venueContext = liveVenues.map((v) => ({
     id: v.id,
@@ -26,10 +21,15 @@ export async function handleConciergeRequest(message: string, history: { role: s
     timings: `${v.timings?.open ?? 'N/A'} – ${v.timings?.close ?? 'N/A'}`,
   }));
 
+  const noVenuesMessage = venueContext.length === 0
+    ? `\n\nIMPORTANT: There are currently NO venues listed on the platform. Politely inform the user that PlaySphere AI is a new marketplace and venue owners are still onboarding. Encourage them to check back soon or suggest they sign up as a venue owner if they have a sports facility.`
+    : '';
+
   const systemPrompt = `You are PlaySphere AI — an intelligent sports concierge for Lucknow, India.
 
-You have access to the following LIVE sports venues database (${venueContext.length} venues, sourced in real-time):
-${JSON.stringify(venueContext, null, 2)}
+You have access to the following LIVE sports venues database (${venueContext.length} venues, sourced in real-time from Firestore):
+${venueContext.length > 0 ? JSON.stringify(venueContext, null, 2) : '[]'}
+${noVenuesMessage}
 
 Your job:
 1. Understand the user's intent (sport, location, budget, skill level, timing preference)

@@ -25,7 +25,8 @@ export async function getAllVenues(): Promise<Venue[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as Venue));
 }
 
-/** Fetch only approved + available venues (for AI grounding, player discovery) */
+/** Fetch only available venues from Firestore (public discovery & AI grounding).
+ *  Firestore is the single source of truth — no static fallback. */
 export async function getApprovedVenues(): Promise<Venue[]> {
   const q = query(
     collection(db, 'venues'),
@@ -191,7 +192,6 @@ export async function toggleSavedVenue(userId: string, venueId: string, isSaved:
 export async function getVenuesByIds(ids: string[]): Promise<Venue[]> {
   if (ids.length === 0) return [];
   const results: Venue[] = [];
-  // getDocs one by one (Firestore doesn't have a native "getMany" but this is fine for small arrays)
   await Promise.all(
     ids.map(async (id) => {
       const snap = await getDoc(doc(db, 'venues', id));
@@ -225,10 +225,17 @@ export async function checkSlotAvailability(venueId: string, date: string, slot:
 
 // ── USERS (Admin) ─────────────────────────────────────────────────────────────
 
-/** Admin: fetch all user profiles */
+/**
+ * Admin: fetch all user profiles.
+ * CRITICAL FIX: Legacy player docs do NOT store `uid` inside the document body —
+ * only in the document path. We always inject uid from d.id to ensure it's populated.
+ */
 export async function getAllUsers(): Promise<UserProfile[]> {
   const snap = await getDocs(collection(db, 'users'));
-  return snap.docs.map((d) => d.data() as UserProfile);
+  return snap.docs.map((d) => ({
+    uid: d.id,         // Always inject from document path — never rely on stored uid field
+    ...d.data(),
+  } as UserProfile));
 }
 
 /** Admin: update an owner's approval status */
@@ -240,5 +247,51 @@ export async function updateOwnerApproval(uid: string, status: ApprovalStatus): 
 export async function getUsersByRole(role: 'player' | 'owner' | 'admin'): Promise<UserProfile[]> {
   const q = query(collection(db, 'users'), where('role', '==', role));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => d.data() as UserProfile);
+  return snap.docs.map((d) => ({
+    uid: d.id,
+    ...d.data(),
+  } as UserProfile));
+}
+
+// ── ADMIN REALTIME LISTENERS ──────────────────────────────────────────────────
+
+/**
+ * Admin: realtime listener for ALL users.
+ * Injects uid from document path so legacy docs without stored uid field still work.
+ */
+export function subscribeAllUsers(callback: (users: UserProfile[]) => void): Unsubscribe {
+  return onSnapshot(collection(db, 'users'), (snap) => {
+    callback(snap.docs.map((d) => ({
+      uid: d.id,
+      ...d.data(),
+    } as UserProfile)));
+  }, (err) => {
+    console.error('[Admin] Users listener error:', err);
+    callback([]);
+  });
+}
+
+/**
+ * Admin: realtime listener for ALL venues.
+ */
+export function subscribeAllVenues(callback: (venues: Venue[]) => void): Unsubscribe {
+  return onSnapshot(collection(db, 'venues'), (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Venue)));
+  }, (err) => {
+    console.error('[Admin] Venues listener error:', err);
+    callback([]);
+  });
+}
+
+/**
+ * Admin: realtime listener for ALL bookings (ordered by creation desc).
+ */
+export function subscribeAllBookings(callback: (bookings: Booking[]) => void): Unsubscribe {
+  const q = query(collection(db, 'bookings'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snap) => {
+    callback(snap.docs.map((d) => ({ id: d.id, ...d.data() } as Booking)));
+  }, (err) => {
+    console.error('[Admin] Bookings listener error:', err);
+    callback([]);
+  });
 }

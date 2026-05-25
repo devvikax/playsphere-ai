@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, Map, LayoutGrid, Loader2, Bot } from 'lucide-react';
-import { LUCKNOW_VENUES, SPORTS_LIST, SPORTS_AREAS } from '@/shared/constants/venues';
+import { SPORTS_LIST, SPORTS_AREAS } from '@/shared/constants/venues';
 import { VenueCard } from '@/components/venue/VenueCard';
 import { VenueMap } from '@/components/venue/VenueMap';
 import { AIConciergePreview } from '@/components/ai/AIConciergePreview';
@@ -12,7 +12,8 @@ import { Venue, VenueFilters, Sport, SkillLevel } from '@/shared/types';
 
 function VenuesContent() {
   const searchParams = useSearchParams();
-  const [allVenues, setAllVenues] = useState<Venue[]>(LUCKNOW_VENUES);
+  const [allVenues, setAllVenues] = useState<Venue[]>([]);
+  const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<VenueFilters>({
     sport: (searchParams.get('sport') as Sport) || '',
     area: '',
@@ -28,11 +29,13 @@ function VenuesContent() {
   useEffect(() => {
     import('@/backend/firebase/firestore').then(({ getAllVenues }) => {
       getAllVenues().then((data) => {
-        if (data && data.length > 0) {
+        if (data) {
           setAllVenues(data);
         }
       }).catch((err) => {
-        console.error('Error fetching venues from Firestore, falling back to local data:', err);
+        console.error('Error fetching venues from Firestore:', err);
+      }).finally(() => {
+        setLoading(false);
       });
     });
   }, []);
@@ -234,7 +237,13 @@ function VenuesContent() {
         </div>
 
         {/* Content */}
-        {view === 'grid' ? (
+        {loading ? (
+          <div className="text-center py-20 bg-slate-900/10 border-2 border-dashed border-slate-800 rounded-lg shadow-[4px_4px_0px_#000] flex flex-col items-center justify-center">
+            <Loader2 className="w-10 h-10 text-cyan-400 animate-spin mb-4" />
+            <h3 className="font-display text-xl font-bold text-white mb-2">Loading Venues</h3>
+            <p className="text-slate-400">Fetching the latest owner-driven sports spaces in Lucknow...</p>
+          </div>
+        ) : view === 'grid' ? (
           venues.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {venues.map((venue) => (
