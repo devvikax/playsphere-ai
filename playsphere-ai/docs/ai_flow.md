@@ -1,12 +1,12 @@
 # AI Systems & Prompt Flows Guide
 
-PlaySphere AI integrates Gemini LLM capability directly with real-time database grounding. This document details the prompts, grounding strategies, and schemas used.
+PlaySphere AI integrates OpenAI-compatible hosted LLM capability (e.g. Groq) directly with real-time database grounding. This document details the prompts, grounding strategies, and schemas used.
 
 ---
 
 ## 🤖 AI Models and Providers
 
-We use **Google Gemini** as our primary language model. The client initialization is defined in `backend/ai/llm.ts`, referencing the user's environment variable `NEXT_PUBLIC_GEMINI_API_KEY`. 
+We use an **OpenAI-compatible hosted LLM API** (such as Groq running Llama 3) as our primary language model. The client initialization is defined in `backend/ai/llm.ts`, referencing the user's environment variables `LLM_API_URL` and `LLM_API_KEY`.
 
 ---
 
@@ -21,7 +21,7 @@ To avoid hallucinations, all AI services query **Firestore** at execution time (
                                                              │
                                                              ▼
 ┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│   Gemini LLM    │ <─────│ Grounded Prompt │ <─────│ Firestore Query │
+│       LLM       │ <─────│ Grounded Prompt │ <─────│ Firestore Query │
 └─────────────────┘       └─────────────────┘       └─────────────────┘
 ```
 
@@ -37,20 +37,21 @@ The Concierge answers general queries about sports in Lucknow, filters venues by
   * Cannot recommend any venue not present in the grounding database (strict anti-hallucination constraint).
   * Automatically calculates pricing modifiers: Afternoon (11 AM - 4 PM) saves 15%, evening (5 PM - 10 PM) is 30% more expensive.
   * Ensures formatting has a clear structure: Acknowledgment, recommendations (1-3 max), pricing insights, next step.
+  * Supports **AI-assisted booking orchestration** (agentic booking prefill): When a player requests to book a slot, the AI parses the venue and time, verifies availability, and triggers a visual prefilled booking ticket card so the user can easily review and finalize manually.
 
 ---
 
-## 🏸 2. Sports Buddy Mentor (`backend/ai/buddy.ts`)
+## 🏸 2. PlaySphere AI Concierge Modes (`backend/ai/concierge.ts`)
 
-The Sports Buddy acts as an encouraging mentor, assisting beginners with training advice, hydration, and suggesting venues fitting their skill level.
+The AI Concierge is a unified conversational agent that offers two internal modes:
 
-* **Target API**: `/api/ai/buddy`
-* **Real-time Grounding**: Dynamically fetches and filters active venues by the user's selected sport (`sport`).
-* **Prompt Rule Highlights**:
-  * Mentors beginners (recommends safety, warm-ups, and budget slots).
-  * Guides intermediates towards competitive play and drills.
-  * Encourages group match-making/turf-sharing.
-  * Restricts recommendations to the current sport-specific venue list.
+* **Discovery Mode**:
+  * Helps users search, filter, and compare sports venues in Lucknow.
+  * Grounded strictly in live Firestore data (counts, locations, prices, active status).
+  * Automatically calculates pricing modifiers based on slot timing (Afternoon 15% discount, Evening 30% peak pricing).
+* **Guidance Mode**:
+  * Provides basic rules, beginner-friendly instructions, workout timing advice, and gear suggestions.
+  * Governed by safety guardrails that block medical, fitness-coaching, or professional fitness plans.
 
 ---
 
@@ -65,6 +66,7 @@ Analyzes the overall venue landscape in Lucknow, performing server-side analytic
   * Sport counts (Badminton, Football, Swimming, Akhara)
   * Average prices per area
 * **Expected Output JSON Schema**:
+
   ```typescript
   interface Insight {
     type: 'gap' | 'opportunity' | 'trend' | 'value';
@@ -76,4 +78,5 @@ Analyzes the overall venue landscape in Lucknow, performing server-side analytic
     urgency: 'high' | 'medium' | 'low';
   }
   ```
-* **Fallback Strategy**: If parsing the JSON response from Gemini fails, the backend service catches the exception and returns predefined seed insights (`getStaticFallbackInsights()`), ensuring the user never sees a broken page.
+
+* **Fallback Strategy**: If parsing the JSON response from the LLM fails, the backend service catches the exception and returns predefined seed insights (`getStaticFallbackInsights()`), ensuring the user never sees a broken page.

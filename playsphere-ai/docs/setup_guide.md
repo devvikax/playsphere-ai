@@ -9,7 +9,7 @@ Ensure you have the following installed:
 * **Node.js**: v20 or later
 * **npm**: v10 or later
 * **Firebase Project**: An active Firebase project with Firestore and Authentication enabled.
-* **Google Gemini API Key**: An active Gemini API key from Google AI Studio.
+* **Hosted LLM API Key**: An active API key from an OpenAI-compatible provider (e.g. Groq, Ollama).
 
 ---
 
@@ -18,8 +18,10 @@ Ensure you have the following installed:
 Create a `.env.local` file in the `playsphere-ai/` root directory. Add the following configurations (replacing placeholders with your active keys):
 
 ```env
-# Google Gemini API Key
-NEXT_PUBLIC_GEMINI_API_KEY=your_gemini_api_key_here
+# AI Configuration (Hosted LLM via Groq/Ollama)
+LLM_API_URL=https://api.groq.com/openai/v1
+LLM_API_KEY=your_llm_api_key_here
+LLM_MODEL=llama-3.1-8b-instant
 
 # Firebase Client SDK Configuration Settings
 NEXT_PUBLIC_FIREBASE_API_KEY=your_firebase_api_key

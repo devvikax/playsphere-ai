@@ -5,14 +5,16 @@ import { useSearchParams } from 'next/navigation';
 import { Search, SlidersHorizontal, Map, LayoutGrid, Loader2, Bot } from 'lucide-react';
 import { SPORTS_LIST, SPORTS_AREAS } from '@/shared/constants/venues';
 import { VenueCard } from '@/components/venue/VenueCard';
-import { VenueMap } from '@/components/venue/VenueMap';
+import { VenueMap, MapItem } from '@/components/venue/VenueMap';
 import { AIConciergePreview } from '@/components/ai/AIConciergePreview';
 import { VenueDiscoveryInsights } from '@/components/ai/VenueDiscoveryInsights';
-import { Venue, VenueFilters, Sport, SkillLevel } from '@/shared/types';
+import { Venue, VenueFilters, Sport, SkillLevel, Infrastructure, Landmark } from '@/shared/types';
 
 function VenuesContent() {
   const searchParams = useSearchParams();
   const [allVenues, setAllVenues] = useState<Venue[]>([]);
+  const [allInfra, setAllInfra] = useState<Infrastructure[]>([]);
+  const [allLandmarks, setAllLandmarks] = useState<Landmark[]>([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState<VenueFilters>({
     sport: (searchParams.get('sport') as Sport) || '',
@@ -27,25 +29,72 @@ function VenuesContent() {
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    import('@/backend/firebase/firestore').then(({ getAllVenues }) => {
-      getAllVenues().then((data) => {
-        if (data) {
+    let active = true;
+    let unsubApprovedVenues: (() => void) | undefined;
+    let unsubInfra: (() => void) | undefined;
+    let unsubLandmarks: (() => void) | undefined;
+
+    import('@/backend/firebase/firestore').then(({ subscribeApprovedVenues, subscribeInfrastructure, subscribeLandmarks }) => {
+      if (!active) return;
+      unsubApprovedVenues = subscribeApprovedVenues((data) => {
+        if (active) {
           setAllVenues(data);
         }
-      }).catch((err) => {
-        console.error('Error fetching venues from Firestore:', err);
-      }).finally(() => {
-        setLoading(false);
+      });
+      unsubInfra = subscribeInfrastructure((infraData) => {
+        if (active) {
+          setAllInfra(infraData);
+        }
+      });
+      unsubLandmarks = subscribeLandmarks((landmarkData) => {
+        if (active) {
+          setAllLandmarks(landmarkData);
+          setLoading(false);
+        }
       });
     });
+
+    return () => {
+      active = false;
+      if (unsubApprovedVenues) unsubApprovedVenues();
+      if (unsubInfra) unsubInfra();
+      if (unsubLandmarks) unsubLandmarks();
+    };
   }, []);
 
+  const combinedItems = useMemo<Venue[]>(() => {
+    const unlinkedInfra = allInfra
+      .filter((i) => !i.ownerLinked)
+      .map((i) => ({
+        ...i,
+        sport: i.sport as Sport,
+        price: 0,
+        rating: i.rating || 0,
+        reviewCount: i.reviewCount || 0,
+        amenities: i.amenities || [],
+        skillLevel: 'all' as const,
+        timings: { open: '00:00', close: '00:00' },
+        description: i.description || '',
+        imageUrl: i.imageUrl || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
+        category: 'infrastructure',
+        available: false,
+        ownerId: 'system',
+        source: 'seed' as const,
+        approvalStatus: 'approved' as const,
+        address: `${i.name}, ${i.area}`,
+        peakPricing: { morning: 0, afternoon: 0, evening: 0 },
+      }));
+    return [...allVenues, ...unlinkedInfra] as Venue[];
+  }, [allVenues, allInfra]);
+
   const venues = useMemo(() => {
-    let filtered = [...allVenues];
+    let filtered = [...combinedItems];
 
     if (filters.sport) filtered = filtered.filter((v) => v.sport === filters.sport);
     if (filters.area) filtered = filtered.filter((v) => v.area === filters.area);
-    if (filters.maxPrice) filtered = filtered.filter((v) => v.price <= filters.maxPrice!);
+    if (filters.maxPrice) {
+      filtered = filtered.filter((v) => v.category === 'infrastructure' || v.price <= filters.maxPrice!);
+    }
     if (filters.skillLevel) filtered = filtered.filter((v) => v.skillLevel === filters.skillLevel || v.skillLevel === 'all');
     if (filters.searchQuery) {
       const q = filters.searchQuery.toLowerCase();
@@ -55,7 +104,51 @@ function VenuesContent() {
     }
 
     return filtered;
-  }, [filters, allVenues]);
+  }, [filters, combinedItems]);
+
+  const combinedRealtimeMapData = useMemo<MapItem[]>(() => {
+    const mapVenues = venues
+      .filter((v) => v.category !== 'infrastructure')
+      .map((v) => ({
+        id: v.id,
+        name: v.name,
+        area: v.area,
+        coordinates: v.coordinates,
+        mapType: 'marketplace' as const,
+        sport: v.sport,
+        imageUrl: v.imageUrl,
+        rating: v.rating,
+        price: v.price,
+        available: v.available,
+      }));
+
+    const mapInfra = venues
+      .filter((v) => v.category === 'infrastructure')
+      .map((v) => ({
+        id: v.id,
+        name: v.name,
+        area: v.area,
+        coordinates: v.coordinates,
+        mapType: 'infrastructure' as const,
+        sport: v.sport,
+        imageUrl: v.imageUrl || 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=800',
+        venueCode: v.venueCode,
+        ownershipStatus: v.ownershipStatus,
+      }));
+
+    const mapLandmarks = allLandmarks.map((l) => ({
+      id: l.id,
+      name: l.name,
+      area: l.area,
+      coordinates: { lat: l.latitude, lng: l.longitude },
+      mapType: 'landmark' as const,
+      sportsRelevance: l.sportsRelevance,
+    }));
+
+    return [...mapVenues, ...mapInfra, ...mapLandmarks];
+  }, [venues, allLandmarks]);
+
+
 
   return (
     <div className="min-h-screen pt-24 pb-16 px-4">
@@ -83,7 +176,7 @@ function VenuesContent() {
               placeholder="Search venues, areas, or sports..."
               value={filters.searchQuery || ''}
               onChange={(e) => setFilters((f) => ({ ...f, searchQuery: e.target.value }))}
-              className="w-full bg-[#0d111d] border-2 border-black rounded-md pl-11 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-0 shadow-[2px_2px_0px_#000] transition-all"
+              className="w-full bg-slate-900 border-2 border-black rounded-md pl-11 pr-4 py-3 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-0 shadow-[2px_2px_0px_#000] transition-all"
             />
           </div>
           <button
@@ -95,7 +188,7 @@ function VenuesContent() {
             <SlidersHorizontal className="w-4 h-4" />
             <span className="hidden sm:inline">Filters</span>
           </button>
-          <div className="flex bg-[#0d111d] rounded-md border-2 border-black overflow-hidden shadow-[2px_2px_0px_#000]">
+          <div className="flex bg-slate-900 rounded-md border-2 border-black overflow-hidden shadow-[2px_2px_0px_#000]">
             <button
               onClick={() => setView('grid')}
               title="Grid View"
@@ -134,11 +227,11 @@ function VenuesContent() {
                 title="Filter by Sport"
                 value={filters.sport || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, sport: e.target.value as Sport | '' }))}
-                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
+                className="w-full bg-slate-900 border-2 border-black rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="" className="bg-[#0d111d]">All Sports</option>
+                <option value="" className="bg-slate-900">All Sports</option>
                 {SPORTS_LIST.map((s) => (
-                  <option key={s.value} value={s.value} className="bg-[#0d111d]">{s.emoji} {s.label}</option>
+                  <option key={s.value} value={s.value} className="bg-slate-900">{s.emoji} {s.label}</option>
                 ))}
               </select>
             </div>
@@ -151,11 +244,11 @@ function VenuesContent() {
                 title="Filter by Area"
                 value={filters.area || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, area: e.target.value }))}
-                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
+                className="w-full bg-slate-900 border-2 border-black rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="" className="bg-[#0d111d]">All Areas</option>
+                <option value="" className="bg-slate-900">All Areas</option>
                 {SPORTS_AREAS.map((a) => (
-                  <option key={a} value={a} className="bg-[#0d111d]">{a}</option>
+                  <option key={a} value={a} className="bg-slate-900">{a}</option>
                 ))}
               </select>
             </div>
@@ -168,12 +261,12 @@ function VenuesContent() {
                 title="Filter by Skill Level"
                 value={filters.skillLevel || ''}
                 onChange={(e) => setFilters((f) => ({ ...f, skillLevel: e.target.value as SkillLevel | '' }))}
-                className="w-full bg-[#0d111d] border-2 border-black rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
+                className="w-full bg-slate-900 border-2 border-black rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-cyan-400 shadow-[2px_2px_0px_#000]"
               >
-                <option value="" className="bg-[#0d111d]">All Levels</option>
-                <option value="beginner" className="bg-[#0d111d]">Beginner</option>
-                <option value="intermediate" className="bg-[#0d111d]">Intermediate</option>
-                <option value="advanced" className="bg-[#0d111d]">Advanced</option>
+                <option value="" className="bg-slate-900">All Levels</option>
+                <option value="beginner" className="bg-slate-900">Beginner</option>
+                <option value="intermediate" className="bg-slate-900">Intermediate</option>
+                <option value="advanced" className="bg-slate-900">Advanced</option>
               </select>
             </div>
 
@@ -192,7 +285,7 @@ function VenuesContent() {
                 onChange={(e) => setFilters((f) => ({ ...f, maxPrice: Number(e.target.value) }))}
                 placeholder="Filter by price"
                 title="Filter by price"
-                className="w-full accent-cyan-400 h-2 bg-[#0d111d] border-2 border-black rounded-md appearance-none cursor-pointer"
+                className="w-full accent-cyan-400 h-2 bg-slate-900 border-2 border-black rounded-md appearance-none cursor-pointer"
               />
             </div>
 
@@ -200,7 +293,7 @@ function VenuesContent() {
             <div className="col-span-1 sm:col-span-2 md:col-span-4 flex justify-end">
               <button
                 onClick={() => setFilters({ sport: '', area: '', maxPrice: 2000, skillLevel: '', searchQuery: '' })}
-                className="text-xs font-bold text-rose-400 hover:text-rose-300 border-2 border-black bg-[#0d111d] px-3 py-1.5 rounded-md shadow-[2px_2px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
+                className="text-xs font-bold text-rose-400 hover:text-rose-300 border-2 border-black bg-slate-900 px-3 py-1.5 rounded-md shadow-[2px_2px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
               >
                 Reset Filters
               </button>
@@ -250,6 +343,12 @@ function VenuesContent() {
                 <VenueCard key={venue.id} venue={venue} />
               ))}
             </div>
+          ) : allVenues.length === 0 ? (
+            <div className="text-center py-20 bg-slate-900/40 border-2 border-black rounded-lg p-10 shadow-[4px_4px_0px_#000]">
+              <div className="text-5xl mb-4">🏢</div>
+              <h3 className="font-display text-xl font-bold text-white mb-2">No venues available yet</h3>
+              <p className="text-slate-400">Be the first venue owner to list your sports facility.</p>
+            </div>
           ) : (
             <div className="text-center py-20">
               <div className="text-5xl mb-4">🔍</div>
@@ -261,7 +360,7 @@ function VenuesContent() {
             </div>
           )
         ) : view === 'map' ? (
-          <VenueMap venues={venues} />
+          <VenueMap items={combinedRealtimeMapData} />
         ) : (
           <div className="max-w-2xl mx-auto">
             <div className="text-center mb-6">

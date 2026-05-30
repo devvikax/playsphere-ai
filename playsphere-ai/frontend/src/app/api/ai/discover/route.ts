@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { handleDiscoverRequest, getStaticFallbackInsights } from '@/backend/ai/discover';
+import { handleDiscoverRequest } from '@/backend/ai/discover';
 
 export async function POST() {
   try {
@@ -8,7 +8,7 @@ export async function POST() {
   } catch (error) {
     console.error('Discovery API Error:', error);
     return NextResponse.json(
-      { insights: getStaticFallbackInsights() },
+      { insights: [] },
       { status: 500 }
     );
   }

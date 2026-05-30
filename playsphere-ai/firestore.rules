@@ -11,16 +11,25 @@ service cloud.firestore {
       return request.auth.uid == uid;
     }
 
+    function isAdmin() {
+      return isAuthenticated() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
     // ── Users collection ─────────────────────────────────────────────────
     match /users/{userId} {
-      // Users can read and create their own profile
-      allow read: if isAuthenticated();
+      // Allow read publicly to support server-side authentication verification
+      allow read: if true;
       allow create: if isOwner(userId);
-      // Users can update their own profile (e.g., savedVenues)
-      // But only admin can change role or approvalStatus
-      allow update: if isOwner(userId) 
-        && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role']))
-        || isAuthenticated(); // Simplified: allow any auth update for now (admin approval)
+      // Users can update their own profile (excluding role and approvalStatus)
+      // Admins can update any user profile (allowing owner approvals)
+      allow update: if isAuthenticated() && (
+        isAdmin() || 
+        (isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'approvalStatus']))
+      );
+      // Allow users to delete their own profile or admins to delete any profile
+      allow delete: if isAuthenticated() && (isOwner(userId) || isAdmin());
     }
 
     // ── Venues collection ─────────────────────────────────────────────────
@@ -33,7 +42,7 @@ service cloud.firestore {
       allow update: if isAuthenticated() 
         && (resource.data.ownerId == request.auth.uid || resource.data.ownerId == 'system');
       allow delete: if isAuthenticated()
-        && resource.data.ownerId == request.auth.uid;
+        && (resource.data.ownerId == request.auth.uid || isAdmin());
     }
 
     // ── Bookings collection ────────────────────────────────────────────────
@@ -42,11 +51,52 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       // Any authenticated user can create a booking (player books)
       allow create: if isAuthenticated();
-      // Users can update their own bookings (e.g., cancel)
-      allow update: if isAuthenticated()
-        && (resource.data.userId == request.auth.uid || isAuthenticated());
-      // No delete (preserve booking history)
-      allow delete: if false;
+      // Users can update their own bookings (e.g., cancel, submit payment), owners can verify them, and admins can manage them
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.playerId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid ||
+        isAdmin()
+      );
+      // Allow delete only for admins (cleanup) or owners if the booking is cancelled
+      allow delete: if isAdmin() || (
+        isAuthenticated() &&
+        (resource.data.playerId == request.auth.uid || resource.data.userId == request.auth.uid) &&
+        (resource.data.bookingStatus == 'cancelled' || resource.data.status == 'cancelled')
+      );
+    }
+
+    // ── Landmarks collection ──────────────────────────────────────────────
+    match /landmarks/{landmarkId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Infrastructure collection ─────────────────────────────────────────
+    match /infrastructure/{infraId} {
+      // Anyone can read infrastructure (public mapping)
+      allow read: if true;
+      // Allow write only for serverless backend tasks (unauthenticated context) or admins
+      allow write: if request.auth == null || isAdmin();
+    }
+
+    // ── Ownership Requests collection ──────────────────────────────────────
+    match /ownership_requests/{requestId} {
+      // Users can read their own requests, admins can read all
+      allow read: if isAuthenticated() && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+      // Owners can only create requests for themselves
+      allow create: if isAuthenticated() &&
+        request.resource.data.ownerId == request.auth.uid;
+      // Only admins can update (approve/reject) or delete requests
+      allow update, delete: if isAdmin();
+    }
+
+    // ── System Settings collection ─────────────────────────────────────────
+    match /system_settings/{settingId} {
+      allow read: if isAdmin();
+      allow write: if isAdmin();
     }
   }
 }

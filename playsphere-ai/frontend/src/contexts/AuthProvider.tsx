@@ -41,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let unsubscribeProfile: (() => void) | null = null;
+    let timeoutId: NodeJS.Timeout | null = null;
 
     const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
       setUser(firebaseUser);
@@ -49,19 +50,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         unsubscribeProfile();
         unsubscribeProfile = null;
       }
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
 
       if (firebaseUser) {
+        setLoading(true);
+        let hasResolved = false;
+
+        // Set a timeout fallback (15 seconds) to resolve loading if document creation takes too long
+        timeoutId = setTimeout(() => {
+          if (!hasResolved) {
+            console.warn('Profile listener timed out; resolving loading with null profile.');
+            setProfile(null);
+            setLoading(false);
+          }
+        }, 15000);
+
         // Subscribe to real-time updates for user profile doc
         unsubscribeProfile = onSnapshot(doc(db, 'users', firebaseUser.uid), (docSnap) => {
           if (docSnap.exists()) {
             setProfile(docSnap.data() as UserProfile);
+            setLoading(false);
+            hasResolved = true;
+            if (timeoutId) {
+              clearTimeout(timeoutId);
+              timeoutId = null;
+            }
           } else {
+            // The user profile doc does not exist yet (could be signup process in progress).
+            // Set profile to null but DO NOT set loading to false yet. Let the profile creation
+            // complete and trigger the next snapshot callback.
             setProfile(null);
           }
-          setLoading(false);
         }, (err) => {
           console.error('Error listening to user profile doc:', err);
+          setProfile(null);
           setLoading(false);
+          hasResolved = true;
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+            timeoutId = null;
+          }
         });
       } else {
         document.cookie = `auth-token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
@@ -88,6 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       unsubscribeAuth();
       unsubscribeToken();
       if (unsubscribeProfile) unsubscribeProfile();
+      if (timeoutId) clearTimeout(timeoutId);
     };
   }, []);
 

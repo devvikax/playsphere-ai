@@ -13,6 +13,7 @@
     "@react-google-maps/api": "^2.20.8",
     "clsx": "^2.1.1",
     "firebase": "^12.13.0",
+    "firebase-admin": "^13.10.0",
     "framer-motion": "^12.40.0",
     "lucide-react": "^1.16.0",
     "next": "16.2.6",
@@ -27,6 +28,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
+    "playwright": "^1.60.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }
