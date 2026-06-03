@@ -60,3 +60,22 @@ traces/
 .cache/
 .vercel
 *.tsbuildinfo
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.sqlite3
+*.sqlite
+*.db
+db.sqlite3
+db.sqlite3-journal
+.venv/
+venv/
+ENV/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+pip-log.txt
+*.egg-info/
+.eggs/

@@ -29,7 +29,6 @@ To safeguard the platform against local clock manipulation (e.g., a player alter
 1. **Client-Side Rendering (Helpful UX)**:
    * The client defaults to rendering disabled tags for past slots using their local time boundary checks, offering direct visual feedback.
 2. **Server-Side Lockdown (Truth & Immunity)**:
-   * The serverless backend (`/api/bookings` creation endpoints) evaluates all bookings against the host server clock, which is synchronized to accurate world truth.
-   * Both `createBooking` and `checkSlotAvailability` ignore any user-supplied clock offsets, checking `isSlotInPast` strictly in the server runtime environment.
+   * The backend and AI services verify and rank bookings/slots using synchronized Python datetime functions. Both client-side calls (`createBooking`) and backend-side calls (`is_slot_in_past`, `get_booking_lifecycle`) ignore any user-supplied clock offsets, evaluating times strictly within the server and Firebase runtime environments.
 3. **No Drift / No Cron**:
    * Lifecycle statuses (`upcoming`, `completed`, `expired`, `cancelled`) are calculated dynamically upon retrieval. By utilizing dynamic time-boundary queries rather than stateful triggers or cron jobs, the platform is 100% resilient to synchronization drifts or timer failures.

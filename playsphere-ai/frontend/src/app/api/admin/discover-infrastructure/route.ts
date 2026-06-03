@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
+import { fetchWithRetry, handleProxyError } from '../../proxyHelper';
 
 export async function POST(req: NextRequest) {
   // Forward the Authorization header from the client (Firebase ID token)
@@ -14,7 +13,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const response = await fetch(`${PYTHON_BACKEND_URL}/api/admin/discover-infrastructure`, {
+    const response = await fetchWithRetry('/api/admin/discover-infrastructure', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -39,10 +38,11 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(data);
   } catch (error: any) {
-    console.error('[/api/admin/discover-infrastructure] Proxy error:', error);
+    const proxyErrorResponse = handleProxyError(error, '/api/admin/discover-infrastructure');
+    const proxyErrorData = await proxyErrorResponse.json().catch(() => ({}));
     return NextResponse.json(
-      { success: false, error: error.message || 'Discovery scan failed.' },
-      { status: 500 }
+      { success: false, error: proxyErrorData?.error || 'Discovery scan failed.' },
+      { status: proxyErrorResponse.status }
     );
   }
 }

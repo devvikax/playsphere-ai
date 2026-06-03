@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2017",
+    "forceConsistentCasingInFileNames": true,
     "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
@@ -20,8 +21,8 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
-      "@/backend/*": ["../backend/*"],
-      "@/shared/*": ["../shared/*"]
+      "@/backend/*": ["./src/backend/*"],
+      "@/shared/*": ["./src/shared/*"]
     }
   },
   "include": [
@@ -30,11 +31,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts",
-    "../backend/**/*.ts",
-    "../backend/**/*.tsx",
-    "../shared/**/*.ts",
-    "../shared/**/*.tsx"
+    "**/*.mts"
   ],
   "exclude": ["node_modules"]
 }

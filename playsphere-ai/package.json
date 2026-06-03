@@ -3,10 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev frontend",
+    "dev:frontend": "next dev frontend",
+    "dev:backend": "cd backend && python -m uvicorn main:app --port 8000 --reload",
+    "dev": "concurrently -n \"next,fastapi\" -c \"black,blue\" \"npm run dev:frontend\" \"npm run dev:backend\"",
     "build": "next build frontend",
     "start": "next start frontend",
-    "lint": "eslint -c frontend/eslint.config.mjs frontend backend shared"
+    "lint": "eslint -c frontend/eslint.config.mjs frontend"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.0.2",
@@ -26,6 +28,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "concurrently": "^10.0.3",
     "eslint": "^9",
     "eslint-config-next": "16.2.6",
     "playwright": "^1.60.0",

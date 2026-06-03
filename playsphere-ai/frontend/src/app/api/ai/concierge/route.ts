@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { fetchWithRetry, handleProxyError } from '../../proxyHelper';
 
 export const maxDuration = 60; // Allow up to 60s for LLM calls
-
-const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:8000';
 
 export async function POST(req: NextRequest) {
   try {
@@ -12,8 +11,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message is required' }, { status: 400 });
     }
 
-    // Proxy to Python FastAPI backend
-    const response = await fetch(`${PYTHON_BACKEND_URL}/api/ai/concierge`, {
+    // Proxy to Python FastAPI backend using retry helper
+    const response = await fetchWithRetry('/api/ai/concierge', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -37,21 +36,6 @@ export async function POST(req: NextRequest) {
     const result = await response.json();
     return NextResponse.json(result);
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error);
-    console.error('[/api/ai/concierge] Proxy error:', msg);
-
-    const isTimeout = msg.toLowerCase().includes('timeout') || msg.toLowerCase().includes('timed out') || msg.toLowerCase().includes('abort');
-    const isRateLimit = msg.toLowerCase().includes('429') || msg.toLowerCase().includes('rate limit');
-
-    return NextResponse.json(
-      {
-        error: isTimeout
-          ? 'AI response timed out. Please try again in a moment.'
-          : isRateLimit
-          ? 'AI service is busy right now. Please try again in a few seconds.'
-          : `AI service error: ${msg}`,
-      },
-      { status: isRateLimit ? 429 : 500 }
-    );
+    return handleProxyError(error, '/api/ai/concierge');
   }
 }

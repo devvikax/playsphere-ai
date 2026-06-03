@@ -77,27 +77,27 @@ PlaySphere AI addresses these regional gaps by introducing a secure, map-integra
 
 ## 📐 System Architecture
 
-PlaySphere AI is designed as a decentralized client-server web app backed by direct Cloud Firestore real-time subscriptions and serverless API endpoints.
+PlaySphere AI uses a hybrid architecture: a Next.js frontend acting as a secure client portal and API proxy, coupled with a Python FastAPI + Django backend that handles AI processing, OpenStreetMap ingestion, and Firebase database administration.
 
 ```mermaid
 graph TD
     User["User Client (Web Browser)"] -->|Next.js App Router| Frontend["Frontend Layer (React Client)"]
     Frontend -->|Real-time Subscriptions| Firestore["Firebase Firestore Database"]
-    Frontend -->|Bearer ID Token Auth| API["Admin Ingestion API Route"]
-    Frontend -->|POST JSON Query| AIAPI["AI Concierge Router Route"]
+    Frontend -->|API Proxies: /api/admin/* & /api/ai/*| NextAPI["Next.js Route Handlers (Proxy)"]
+    NextAPI -->|HTTP Requests (Port 8000)| PythonBackend["Python Backend (FastAPI / Django)"]
     
-    API -->|Queries Lucknow coordinates| OSM["OSM Overpass API"]
-    API -->|Optional Text Search| Google["Google Places API"]
-    API -->|Upgraded Priority Merge| Firestore
+    PythonBackend -->|Queries Lucknow coordinates| OSM["OSM Overpass API"]
+    PythonBackend -->|Optional Search| Google["Google Places API"]
+    PythonBackend -->|Syncs & Writes| Firestore
     
-    AIAPI -->|Facts Grounding Query| Firestore
-    AIAPI -->|Prompt Context Assembly| LLM["Groq / Llama 3 LLM Service"]
-    LLM -->|Parsed JSON Parameters| AIAPI
-    AIAPI -->|Structured Rationale + Booking Prefill| Frontend
+    PythonBackend -->|Facts Grounding Query| Firestore
+    PythonBackend -->|Prompt Context Assembly| LLM["Groq / Llama 3 (Groq API)"]
+    LLM -->|Structured Recommendations / Prefills| PythonBackend
+    PythonBackend -->|JSON Payload| NextAPI
 ```
 
 ### Data Flow
-1.  **Discovery**: Admin triggers `/api/admin/discover-infrastructure`. The server crawls Lucknow's coordinate bounding box using the OpenStreetMap Overpass API, filters out junk (empty names, invalid coordinates), performs optional Google Places metadata enrichment, and saves them to Firestore under `source: osm_discovered` (unbookable).
+1.  **Discovery**: Admin triggers `/api/admin/discover-infrastructure` from the frontend dashboard. Next.js proxies this request to the Python backend. The backend crawls Lucknow's coordinates via the OpenStreetMap Overpass API, filters out invalid candidates, performs optional Google Places metadata enrichment, and saves them to Firestore under `source: osm_discovered` (unbookable).
 2.  **Claiming**: An Owner registers, submits a claim request with verification documents. Admin reviews and approves the claim. The venue's state changes to `ownerLinked: true, bookable: true`.
 3.  **Booking**: A Player searches, selects a slot, and makes a booking. The booking state is written to Firestore, instantly syncing with the Owner's dashboard via real-time hooks.
 
@@ -109,12 +109,14 @@ graph TD
 | :--- | :--- | :--- |
 | **Frontend Framework** | **Next.js 16 (App Router + Turbopack)** | Server-side rendering, layout optimization, dynamic page chunks. |
 | **Core UI Library** | **React 19** | Component-driven UI rendering and Client Hooks. |
-| **Language** | **TypeScript** | Strict typings and type-safe database schemas. |
-| **Styling** | **Tailwind CSS v4** | Dark/Light semantic variables mapping and layout responsiveness. |
-| **Database** | **Cloud Firestore** | Real-time database synchronizations and direct listener feeds. |
-| **Authentication** | **Firebase Auth** | Role-based email sign-in and Google Sign-in redirect fallback. |
-| **Maps API** | **Google Maps JS API** | Map visualization, coordinate markers, and InfoWindow overlays. |
-| **LLM Orchestration** | **Llama 3 (via Groq API)** | Grounded reasoning, sports guidance, and prefill orchestration. |
+| **Backend API Gateway** | **FastAPI + Uvicorn** | Async REST API handling with auto-generated Swagger documentation. |
+| **Backend Settings / CLI** | **Django 5.x** | Configuration management and robust testing CLI command suite. |
+| **Language** | **TypeScript & Python 3.13** | Type safety across client and server-side components. |
+| **Styling** | **Tailwind CSS v4** | Dark/Light theme variable mapping, modern Neo-Brutalist layouts. |
+| **Database** | **Cloud Firestore & SQLite** | Firestore for real-time app data; local SQLite for Django management internals. |
+| **Authentication** | **Firebase Auth & firebase-admin** | Role-based authentication, token validation, and claim verification. |
+| **Maps API** | **Google Maps JS API** | Interactive map pins, coordinate markers, and info overlays. |
+| **LLM Orchestration** | **Llama 3 (via Groq API / HTTPX)** | Grounded reasoning, sports guidance, and prefill orchestration. |
 | **Icons & Assets** | **Lucide React** | Consistent, high-fidelity SVGs. |
 
 ---
@@ -168,6 +170,7 @@ Finals Inception
  ├── [Auth Redirect Patch] ➔ Implemented popup-blocked fallback (Popup ➔ redirect) with AuthProvider state listener.
  ├── [Theme System Engine] ➔ Mapped Tailwind slate colors to dynamic variables with head-blocking script.
  ├── [Hybrid OSM pipeline] ➔ Integrated real-time OSM Overpass API crawler with raw/normalized/rejected counters.
+ ├── [Backend Migration]   ➔ Migrated core API routes & AI logic to Python (Django + FastAPI).
  └── [Final Hardening Pass]➔ Upgraded upsert duplicate protection priority and verified E2E check integration.
 Finals Submission Ready
 ```
@@ -194,12 +197,13 @@ Finals Submission Ready
 Follow this guide to deploy and run PlaySphere AI locally on your system.
 
 ### 1. Prerequisites
-*   Node.js (v18 or higher)
-*   NPM (v9 or higher)
+*   Node.js (v20 or higher)
+*   Python (v3.11 or higher)
+*   NPM (v10 or higher)
 *   A Firebase Project on Spark (free) or Blaze plan.
 
 ### 2. Environment Configurations
-Create a `.env.local` file in the root of the project:
+Create a single `.env` file in the **root** of the project (copying from `.env.example` in root):
 
 ```env
 # Next.js Public Firebase Client Config
@@ -210,42 +214,63 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your-storage-bucket
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-messaging-sender-id
 NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
 
-# Google Maps Javascript SDK Key
+# Google Maps API Keys
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=your-google-maps-api-key
+GOOGLE_MAPS_API_KEY=your-google-maps-api-key
 
-# Admin Email Whitelist (comma-separated, case-insensitive)
-NEXT_PUBLIC_ADMIN_EMAILS=testadmin@gmail.com,testadmin2@gmail.com,testadmin3@gmail.com
+# Admin Email Whitelist
+ADMIN_EMAILS=testadmin@gmail.com,testadmin2@gmail.com
+NEXT_PUBLIC_ADMIN_EMAILS=testadmin@gmail.com,testadmin2@gmail.com
 
-# LLM Orchestration Settings (Groq Endpoint)
+# LLM Orchestration Settings
 LLM_API_KEY=your-groq-api-key
 LLM_API_URL=https://api.groq.com/openai/v1
-LLM_MODEL=llama3-8b-8192
+LLM_MODEL=llama-3.1-8b-instant
+
+# Django Internal Secret
+DJANGO_SECRET_KEY=your-django-secret-key
+DEBUG=true
+
+# Firebase Admin SDK Configuration (Backend Internal)
+# Path to service account key file
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceAccountKey.json
+FIREBASE_PROJECT_ID=your-project-id
+
+# Local Networking
+PYTHON_BACKEND_URL=http://localhost:8000
+FRONTEND_URL=http://localhost:3000
 ```
 
 ### 3. Local Installation & Launch
-Run the following commands inside the workspace root:
 
+Open two terminals in the workspace root:
+
+**Terminal 1: Python Backend**
 ```bash
-# 1. Install dependencies
+# Install backend dependencies
+cd backend
+pip install -r requirements.txt
+
+# Run migrations (Django internals)
+python manage.py migrate
+
+# Start the FastAPI server on port 8000
+python -m uvicorn main:app --port 8000 --reload
+```
+
+**Terminal 2: Next.js Frontend**
+```bash
+# Install frontend dependencies
 npm install
 
-# 2. Start the dev server in the background
+# Start the dev server
 npm run dev
-
-# 3. Compile the production bundles
-npm run build
-
-# 4. Run linter checks
-npm run lint
-
-# 5. Check type safety compiler
-npx tsc --noEmit -p frontend
 ```
 
 ### 4. Verification Check
-Start the Next.js dev server on `http://localhost:3000`, then execute the E2E verification test suite:
+To run the full E2E verification test suite, navigate to the `backend/` directory and run:
 ```bash
-node scratch/test-phase10-final.js
+python manage.py run_test_suite
 ```
 
 ---
@@ -256,18 +281,23 @@ node scratch/test-phase10-final.js
 playsphere-ai/
 ├── backend/
 │   ├── ai/            # Core grounded LLM Concierge and OSM discovery logic
-│   └── firebase/      # Firestore db initializations, client queries, and admin config
-├── docs/              # Technical specs (timezone policies, setup logs)
+│   ├── api/           # FastAPI router endpoint controllers
+│   ├── core/          # Django configuration & custom management commands
+│   ├── firebase_service/ # firebase-admin Python SDK wrappers
+│   ├── shared/        # Shared Pydantic data models & pricing formulas
+│   ├── main.py        # FastAPI server entry point
+│   └── manage.py      # Django management CLI wrapper
+├── docs/              # System architecture, schemas, and specs
 ├── frontend/
 │   ├── public/        # Asset repository
 │   └── src/
-│       ├── app/       # App routing pages & REST api endpoints
-│       ├── components/# Visual layouts, forms, and venue map elements
-│       └── contexts/  # React Context APIs (Auth session sync, Theme mode state)
-└── shared/
-    ├── constants/     # Sports configs and localized default profiles
-    ├── helpers/       # Time parsing, ticket naming, and distance tools
-    └── types/         # Domain-level typescript type schemas
+│       ├── app/       # App routing pages & Next.js proxy route handlers
+│       ├── backend/   # Client-side Firebase configs & auth handlers
+│       ├── components/# Reusable UI widgets and map elements
+│       ├── contexts/  # React Context APIs (Auth and Theme states)
+│       └── shared/    # Client-side helpers, constants, and typings
+├── .env               # Centralized, unified configuration variables
+└── package.json       # Frontend scripts and workspace dependencies
 ```
 
 ---
@@ -276,7 +306,7 @@ playsphere-ai/
 
 *   **Payment Simulation**: Payment collection relies on manual player-submitted transaction receipts and UTR numbers. No real bank accounts or UPI gateways are connected.
 *   **Geographic Boundaries**: Locality mapping and distance calculations are optimized specifically for the city of Lucknow and its surrounding suburban districts.
-*   **Places Ingestion Rate Limits**: Google Places metadata enrichment relies on individual key quota ceilings; the system limits search requests to a maximum of 5 candidates per scan to save API credits.
+*   **Places Ingestion Rate Limits**: Google Places enrichment limits search requests candidates to save API credits.
 
 ---
 
@@ -309,3 +339,4 @@ playsphere-ai/
 ---
 
 Built with AI-assisted development and sports-tech innovation by **Team DeepStack** for APL Finals 2026.
+

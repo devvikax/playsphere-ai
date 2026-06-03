@@ -6,33 +6,33 @@ PlaySphere AI integrates OpenAI-compatible hosted LLM capability (e.g. Groq) dir
 
 ## 🤖 AI Models and Providers
 
-We use an **OpenAI-compatible hosted LLM API** (such as Groq running Llama 3) as our primary language model. The client initialization is defined in `backend/ai/llm.ts`, referencing the user's environment variables `LLM_API_URL` and `LLM_API_KEY`.
+We use an **OpenAI-compatible hosted LLM API** (such as Groq running Llama 3) as our primary language model. The client initialization is defined in `backend/ai/llm.py`, referencing environment variables `LLM_API_URL` and `LLM_API_KEY` loaded dynamically from the root `.env` file.
 
 ---
 
 ## 🛠️ Grounded AI Services
 
-To avoid hallucinations, all AI services query **Firestore** at execution time (or fall back to static seed data if Firestore is unreachable). The retrieved data is injected into the LLM system prompt dynamically.
+To avoid hallucinations, all AI services query **Firestore** (via `backend/firebase_service/firestore.py`) at execution time. The retrieved data is injected into the LLM system prompt dynamically.
 
 ```
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│ User UI Request │ ─────>│   Next.js API   │ ─────>│  AI Service     │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
-                                                             │
-                                                             ▼
-┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐
-│       LLM       │ <─────│ Grounded Prompt │ <─────│ Firestore Query │
-└─────────────────┘       └─────────────────┘       └─────────────────┘
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│ User UI Request │ ─────>│ Next.js Proxy   │ ─────>│ FastAPI Backend │ ─────>│  AI Service      │
+└─────────────────┘       └─────────────────┘       └─────────────────┘       └──────────────────┘
+                                                                                       │
+                                                                                       ▼
+┌─────────────────┐       ┌─────────────────┐       ┌─────────────────┐       ┌──────────────────┐
+│       LLM       │ <─────│ Grounded Prompt │ <─────│ Firestore Query │ <─────│ firebase-admin   │
+└─────────────────┘       └─────────────────┘       └─────────────────┘       └──────────────────┘
 ```
 
 ---
 
-## 💬 1. Sports Concierge Assistant (`backend/ai/concierge.ts`)
+## 💬 1. Sports Concierge Assistant (`backend/ai/concierge.py`)
 
 The Concierge answers general queries about sports in Lucknow, filters venues by pricing/location, and assists with availability.
 
-* **Target API**: `/api/ai/concierge`
-* **Real-time Grounding**: Fetches all approved venues (`getAllVenues()`) and maps relevant properties (`name`, `sport`, `area`, `price`, `rating`, `timings`, `amenities`).
+* **Target API**: `/api/ai/concierge` (proxied to Python backend endpoint `/api/ai/concierge`)
+* **Real-time Grounding**: Fetches all approved venues (`get_all_venues()`) and maps relevant properties (`name`, `sport`, `area`, `price`, `rating`, `timings`, `amenities`).
 * **Prompt Rule Highlights**:
   * Cannot recommend any venue not present in the grounding database (strict anti-hallucination constraint).
   * Automatically calculates pricing modifiers: Afternoon (11 AM - 4 PM) saves 15%, evening (5 PM - 10 PM) is 30% more expensive.
@@ -41,7 +41,7 @@ The Concierge answers general queries about sports in Lucknow, filters venues by
 
 ---
 
-## 🏸 2. PlaySphere AI Concierge Modes (`backend/ai/concierge.ts`)
+## 🏸 2. PlaySphere AI Concierge Modes (`backend/ai/concierge.py`)
 
 The AI Concierge is a unified conversational agent that offers two internal modes:
 
@@ -55,11 +55,11 @@ The AI Concierge is a unified conversational agent that offers two internal mode
 
 ---
 
-## 📊 3. Discover Insights Generator (`backend/ai/discover.ts`)
+## 📊 3. Discover Insights Generator (`backend/ai/discover.py`)
 
 Analyzes the overall venue landscape in Lucknow, performing server-side analytics (such as count distributions by area/sport, price averages) and feeds these summaries into the LLM to get structured JSON recommendations.
 
-* **Target API**: `/api/ai/discover`
+* **Target API**: `/api/ai/discover` (proxied to Python backend endpoint `/api/ai/discover`)
 * **Grounding Data**:
   * Total venue counts
   * Area counts (Gomti Nagar, Aliganj, Hazratganj, etc.)
@@ -67,16 +67,16 @@ Analyzes the overall venue landscape in Lucknow, performing server-side analytic
   * Average prices per area
 * **Expected Output JSON Schema**:
 
-  ```typescript
-  interface Insight {
-    type: 'gap' | 'opportunity' | 'trend' | 'value';
-    title: string;       // max 4 words
-    description: string; // max 2 sentences with statistics
-    area?: string;
-    sport?: string;
-    emoji: string;
-    urgency: 'high' | 'medium' | 'low';
-  }
+  ```python
+  class Insight(BaseModel):
+      type: Literal["gap", "opportunity", "trend", "value"]
+      title: str        # max 4 words
+      description: str  # max 2 sentences with statistics
+      area: Optional[str] = None
+      sport: Optional[str] = None
+      emoji: str
+      urgency: Literal["high", "medium", "low"]
   ```
 
-* **Fallback Strategy**: If parsing the JSON response from the LLM fails, the backend service catches the exception and returns predefined seed insights (`getStaticFallbackInsights()`), ensuring the user never sees a broken page.
+* **Fallback Strategy**: If parsing the JSON response from the LLM fails, the backend service catches the exception and returns predefined seed insights (`get_static_fallback_insights()`), ensuring the user never sees a broken page.
+

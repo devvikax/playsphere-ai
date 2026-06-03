@@ -1,6 +1,6 @@
 # Firestore Collections & Security Database Guide
 
-This document describes the schema, roles, and querying patterns of the Firebase Firestore collections in **PlaySphere AI**.
+This document describes the schema, roles, and querying patterns of the Firebase Firestore collections in **PlaySphere AI**, consumed by both the Next.js frontend client and the Python backend services.
 
 ---
 
