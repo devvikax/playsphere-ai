@@ -75,12 +75,13 @@ export function VenueDiscoveryInsights() {
           <div className="w-8 h-8 rounded-md bg-yellow-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000]">
             <Zap className="w-4 h-4 text-black fill-black" />
           </div>
-          <h2 className="font-display font-bold text-xl text-white">AI Venue Discovery</h2>
+          {/* text-primary flips between dark:#f8fafc and light:#0c0f17 */}
+          <h2 className="font-display font-bold text-xl text-primary">AI Venue Discovery</h2>
         </div>
         <button
           onClick={handleRefresh}
           disabled={loading}
-          className="flex items-center gap-2 text-xs font-bold bg-slate-900 border-2 border-black text-slate-300 px-3 py-1.5 rounded-md shadow-[2px_2px_0px_#000] hover:text-white hover:-translate-y-0.5 transition-all disabled:opacity-50"
+          className="flex items-center gap-2 text-xs font-bold bg-card border-2 border-black text-muted-theme px-3 py-1.5 shadow-[2px_2px_0px_#000] hover:text-primary hover:-translate-y-0.5 transition-all disabled:opacity-50"
         >
           <RefreshCw className={cn("w-3.5 h-3.5", loading && "animate-spin")} />
           Refresh
@@ -89,33 +90,35 @@ export function VenueDiscoveryInsights() {
 
       <div className="flex gap-4 overflow-x-auto pb-4 pt-1 scrollbar-hide snap-x snap-mandatory">
         {loading && insights.length === 0 ? (
-          // Loading Skeleton
+          // Loading Skeleton — uses bg-card and bg-card-nested so light mode works
           Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="min-w-[280px] md:min-w-[320px] bg-slate-900 border-3 border-black rounded-lg p-5 shadow-[5px_5px_0px_#000] animate-pulse snap-center">
-              <div className="h-6 w-32 bg-slate-800 rounded mb-4" />
-              <div className="h-4 w-full bg-slate-800 rounded mb-2" />
-              <div className="h-4 w-4/5 bg-slate-800 rounded mb-6" />
-              <div className="h-4 w-24 bg-slate-800 rounded" />
+            <div key={i} className="min-w-[280px] md:min-w-[320px] bg-card border-3 border-black p-5 shadow-[5px_5px_0px_#000] animate-pulse snap-center">
+              <div className="h-6 w-32 bg-card-nested rounded mb-4" />
+              <div className="h-4 w-full bg-card-nested rounded mb-2" />
+              <div className="h-4 w-4/5 bg-card-nested rounded mb-6" />
+              <div className="h-4 w-24 bg-card-nested rounded" />
             </div>
           ))
         ) : (
           insights.map((insight, i) => (
             <div
               key={i}
-              className="min-w-[280px] md:min-w-[320px] bg-[#121620] border-3 border-black rounded-lg flex flex-col shadow-[5px_5px_0px_#000] hover:-translate-y-1 hover:shadow-[7px_7px_0px_#000] transition-all snap-center group"
+              className="min-w-[280px] md:min-w-[320px] bg-card border-3 border-black flex flex-col shadow-[5px_5px_0px_#000] hover:-translate-y-1 hover:shadow-[7px_7px_0px_#000] transition-all snap-center group"
             >
-              <div className={cn("px-4 py-3 border-b-3 border-black flex items-center gap-2 font-display font-bold rounded-t-[5px]", getTypeColor(insight.type))}>
+              {/* Coloured header stripe — type colors are always vivid, work on both themes */}
+              <div className={cn("px-4 py-3 border-b-3 border-black flex items-center gap-2 font-display font-bold", getTypeColor(insight.type))}>
                 <span className="text-xl">{insight.emoji}</span>
                 {insight.title}
               </div>
               <div className="p-5 flex-1 flex flex-col">
-                <p className="text-slate-300 text-sm leading-relaxed mb-6 flex-1">
+                {/* text-muted-theme: dark → slate-400, light → slate-600 */}
+                <p className="text-muted-theme text-sm leading-relaxed mb-6 flex-1">
                   {insight.description}
                 </p>
                 <div className="flex items-center justify-between mt-auto">
                   <Link
                     href={`/venues?${insight.sport ? `sport=${insight.sport}&` : ''}${insight.area ? `area=${encodeURIComponent(insight.area)}` : ''}`}
-                    className="text-xs font-bold text-cyan-400 group-hover:text-cyan-300 flex items-center gap-1 transition-colors"
+                    className="text-xs font-bold text-cyan-500 group-hover:text-cyan-600 flex items-center gap-1 transition-colors"
                   >
                     Explore {insight.sport ? insight.sport.charAt(0).toUpperCase() + insight.sport.slice(1) : 'Venues'} <ArrowRight className="w-3.5 h-3.5" />
                   </Link>

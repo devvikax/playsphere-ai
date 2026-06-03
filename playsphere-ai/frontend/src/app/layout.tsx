@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Inter, Space_Grotesk } from 'next/font/google';
+import { Inter, Space_Grotesk, Space_Mono, Bebas_Neue } from 'next/font/google';
 import './globals.css';
 import { AuthProvider } from '@/contexts/AuthProvider';
 import { Navbar } from '@/components/layout/Navbar';
@@ -14,6 +14,20 @@ const inter = Inter({
 const spaceGrotesk = Space_Grotesk({
   subsets: ['latin'],
   variable: '--font-space',
+  display: 'swap',
+});
+
+const spaceMono = Space_Mono({
+  subsets: ['latin'],
+  weight: ['400', '700'],
+  variable: '--font-space-mono',
+  display: 'swap',
+});
+
+const bebasNeue = Bebas_Neue({
+  subsets: ['latin'],
+  weight: '400',
+  variable: '--font-bebas',
   display: 'swap',
 });
 
@@ -37,7 +51,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className={`${inter.variable} ${spaceGrotesk.variable} scroll-smooth`}>
+    <html
+      lang="en"
+      suppressHydrationWarning
+      data-scroll-behavior="smooth"
+      className={`${inter.variable} ${spaceGrotesk.variable} ${spaceMono.variable} ${bebasNeue.variable} scroll-smooth`}
+    >
       <head>
         <script
           dangerouslySetInnerHTML={{
@@ -56,7 +75,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="bg-slate-950 text-slate-200 antialiased transition-colors duration-300">
+      <body className="bg-canvas text-slate-200 antialiased transition-colors duration-300">
         <ThemeProvider>
           <AuthProvider>
             <Navbar />

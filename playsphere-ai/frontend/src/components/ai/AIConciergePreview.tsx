@@ -107,7 +107,13 @@ export function AIConciergePreview() {
       });
 
       if (!res.ok) {
-        throw new Error('API failed');
+        // Read the actual error from the server response body
+        let serverError = `HTTP ${res.status}`;
+        try {
+          const errBody = await res.json();
+          serverError = errBody.error || serverError;
+        } catch {}
+        throw new Error(serverError);
       }
 
       const data = await res.json();
@@ -157,7 +163,7 @@ export function AIConciergePreview() {
       ];
 
   return (
-    <div className="bg-slate-950 border-3 border-black rounded-lg overflow-hidden shadow-[6px_6px_0px_#000]">
+    <div className="bg-card border-3 border-black overflow-hidden shadow-[6px_6px_0px_#000]">
       {/* Header */}
       <div className="flex items-center gap-3 px-5 py-4 border-b-2 border-black bg-purple-600 text-white">
         <div className="w-9 h-9 rounded-md bg-yellow-400 border-2 border-black flex items-center justify-center shadow-[2px_2px_0px_#000]">
@@ -174,13 +180,13 @@ export function AIConciergePreview() {
       </div>
 
       {/* Mode Selector Toggle */}
-      <div className="flex border-b-2 border-black p-2 bg-slate-900 gap-2">
+      <div className="flex border-b-2 border-black p-2 bg-card-nested gap-2">
         <button
           suppressHydrationWarning={true}
           onClick={() => setMode('discovery')}
           className={cn(
-            "flex-1 text-center py-1.5 text-xs font-black rounded border-2 border-black transition-all shadow-[2px_2px_0px_#000] cursor-pointer",
-            mode === 'discovery' ? "bg-purple-600 text-white shadow-[1px_1px_0px_#000] translate-x-0.5 translate-y-0.5" : "bg-slate-950 text-slate-400 hover:text-slate-200"
+            "flex-1 text-center py-1.5 text-xs font-black border-2 border-black transition-all shadow-[2px_2px_0px_#000] cursor-pointer",
+            mode === 'discovery' ? "bg-purple-600 text-white shadow-[1px_1px_0px_#000] translate-x-0.5 translate-y-0.5" : "bg-card text-muted-theme hover:text-primary"
           )}
         >
           🔍 Discovery Mode
@@ -189,8 +195,8 @@ export function AIConciergePreview() {
           suppressHydrationWarning={true}
           onClick={() => setMode('guidance')}
           className={cn(
-            "flex-1 text-center py-1.5 text-xs font-black rounded border-2 border-black transition-all shadow-[2px_2px_0px_#000] cursor-pointer",
-            mode === 'guidance' ? "bg-emerald-400 text-black shadow-[1px_1px_0px_#000] translate-x-0.5 translate-y-0.5" : "bg-slate-950 text-slate-400 hover:text-slate-200"
+            "flex-1 text-center py-1.5 text-xs font-black border-2 border-black transition-all shadow-[2px_2px_0px_#000] cursor-pointer",
+            mode === 'guidance' ? "bg-emerald-400 text-black shadow-[1px_1px_0px_#000] translate-x-0.5 translate-y-0.5" : "bg-card text-muted-theme hover:text-primary"
           )}
         >
           🏸 Guidance Mode
@@ -208,7 +214,7 @@ export function AIConciergePreview() {
                   ? 'bg-cyan-400 text-black rounded-br-none border-2 border-black rounded-md shadow-[2px_2px_0px_#000]'
                   : msg.isError
                   ? 'bg-rose-950/40 text-rose-300 border-rose-500 shadow-[2px_2px_0px_rgba(239,68,68,0.2)] border-2 rounded-md rounded-bl-none'
-                  : 'glass text-slate-200 rounded-bl-none'
+                  : 'glass text-primary rounded-bl-none'
               )}
             >
               <pre className="font-sans whitespace-pre-wrap">{msg.content}</pre>
@@ -247,10 +253,10 @@ export function AIConciergePreview() {
                     return (
                       <div
                         key={card.venueId}
-                        className="bg-slate-900 border-2 border-black rounded-lg overflow-hidden shadow-[3px_3px_0px_#000] flex flex-col hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#000] transition-all"
+                        className="bg-card-nested border-2 border-black overflow-hidden shadow-[3px_3px_0px_#000] flex flex-col hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[4px_4px_0px_#000] transition-all"
                       >
                         {/* Image */}
-                        <div className="relative h-28 overflow-hidden bg-slate-900 border-b border-black">
+                        <div className="relative h-28 overflow-hidden bg-card-nested border-b border-black">
                           {card.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -259,17 +265,17 @@ export function AIConciergePreview() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <div className="w-full h-full flex items-center justify-center text-3xl bg-slate-950">
+                            <div className="w-full h-full flex items-center justify-center text-3xl bg-canvas">
                               🏢
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                           <span className="absolute bottom-2 left-2 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-black bg-cyan-400 text-black">
                             {card.sport}
                           </span>
                           <span className={cn(
                             "absolute top-2 right-2 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded border border-black",
-                            isInfra ? "bg-slate-700 text-slate-200" : "bg-emerald-500 text-black"
+                            isInfra ? "bg-card text-primary border border-black" : "bg-emerald-500 text-black"
                           )}>
                             {isInfra ? 'Mapped' : 'Bookable'}
                           </span>
@@ -278,10 +284,10 @@ export function AIConciergePreview() {
                         {/* Details */}
                         <div className="p-3 flex-1 flex flex-col justify-between">
                           <div>
-                            <h4 className="font-extrabold text-slate-200 text-xs mb-1 line-clamp-1">
+                            <h4 className="font-extrabold text-primary text-xs mb-1 line-clamp-1">
                               {card.title}
                             </h4>
-                            <p className="text-slate-400 text-[10px] mb-2 flex items-center gap-0.5">
+                            <p className="text-muted-theme text-[10px] mb-2 flex items-center gap-0.5">
                               <span>📍</span> {card.area}
                             </p>
 
@@ -291,13 +297,13 @@ export function AIConciergePreview() {
                                   ₹{card.price}/hr
                                 </span>
                                 {card.rating !== undefined && (
-                                  <span className="text-[#fbbf24] text-[10px] font-bold">
+                                  <span className="text-amber-500 text-[10px] font-bold">
                                     ★ {card.rating}
                                   </span>
                                 )}
                               </div>
                             ) : (
-                              <div className="bg-slate-900/90 border border-slate-800 px-1.5 py-1 rounded text-[9px] font-mono text-slate-400 mb-2.5 overflow-hidden text-ellipsis whitespace-nowrap">
+                              <div className="bg-canvas border border-black/20 px-1.5 py-1 text-[9px] font-mono text-muted-theme mb-2.5 overflow-hidden text-ellipsis whitespace-nowrap">
                                 Code: {card.venueCode || 'N/A'}
                               </div>
                             )}
@@ -316,7 +322,7 @@ export function AIConciergePreview() {
                               <div className="flex flex-col gap-1">
                                 <Link
                                   href={`/venues/${card.venueId}?infra=true`}
-                                  className="block w-full text-center bg-slate-800 hover:bg-slate-750 text-white font-bold text-[10px] py-1 rounded border border-black shadow-[1.5px_1.5px_0px_#000] no-underline transition-all cursor-pointer"
+                                  className="block w-full text-center bg-card text-primary font-bold text-[10px] py-1 border border-black shadow-[1.5px_1.5px_0px_#000] no-underline transition-all cursor-pointer hover:bg-card-nested"
                                 >
                                   View Details
                                 </Link>
@@ -340,7 +346,7 @@ export function AIConciergePreview() {
         ))}
         {loading && (
           <div className="flex justify-start">
-            <div className="bg-slate-900 border-2 border-black rounded-md rounded-bl-none px-4 py-3 shadow-[2px_2px_0px_#000] flex items-center gap-1">
+            <div className="bg-card border-2 border-black rounded-bl-none px-4 py-3 shadow-[2px_2px_0px_#000] flex items-center gap-1">
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce" />
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce animation-delay-150ms" />
               <div className="w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce animation-delay-300ms" />
@@ -357,7 +363,7 @@ export function AIConciergePreview() {
             key={prompt}
             onClick={() => sendMessage(prompt)}
             disabled={loading}
-            className="text-xs bg-slate-900 border-2 border-black rounded-md px-3 py-1.5 text-slate-300 font-bold hover:bg-cyan-400 hover:text-black hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[2px_2px_0px_#000] transition-all cursor-pointer disabled:opacity-50"
+            className="text-xs bg-card border-2 border-black px-3 py-1.5 text-muted-theme font-bold hover:bg-cyan-400 hover:text-black hover:translate-x-[-1px] hover:translate-y-[-1px] hover:shadow-[2px_2px_0px_#000] transition-all cursor-pointer disabled:opacity-50"
           >
             {prompt}
           </button>
